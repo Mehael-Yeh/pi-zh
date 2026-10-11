@@ -36,7 +36,7 @@ git clone https://github.com/Mehael-Yeh/pi-command-menu-zh.git command-menu-zh
 
 ## 增补翻译
 
-编辑本目录 `translations.json`，键为不带 `/` 的完整命令名，值为中文说明，保存后 `/reload`。未收录命令保留原说明。技能命令统一增加“加载技能”，原技能说明保留。
+编辑本目录 `translations.json`，键为不带 `/` 的完整命令名，值为中文说明，保存后 `/reload`。未收录命令保留原说明。技能命令统一增加“加载技能”，原技能说明保留。Pi 自带的内置命令与内置扩展命令（如 `/llama`、`/mcp`）也在此文件维护，不写入 `third-party.ts`。
 
 ## 第三方命令与升级检查
 
@@ -44,7 +44,7 @@ git clone https://github.com/Mehael-Yeh/pi-command-menu-zh.git command-menu-zh
 
 Bigpowers 与 pi-subagents 提示模板已收录。`skill:<name>` 优先使用同名命令翻译，其他技能仅增加“加载技能”并保留原说明。`@juicesharp/rpiv-todo` 提供 `/todos`；`@juicesharp/rpiv-ask-user-question` 与 `openwiki` 只注册工具和技能（openwiki 另提供 `skill:openwiki`），没有斜杠命令，因此只由通用技能翻译覆盖。MCP 服务动态下发的提示命令无法通过包源码穷举；当前 amap-maps 缓存未发现提示目录。未来新包、新模板或动态命令需要再次检查并补充。
 
-用户 `translations.json` 优先于第三方默认词典，可覆盖说明。
+用户 `translations.json` 优先于第三方默认词典，可覆盖说明。内置扩展命令随 Pi 安装版本变化，而 `check-upgrades.ps1` 只跟踪 settings.json 中的 npm 包，不跟踪 `install/releases`；升级 Pi 后请重跑 `verify.mjs` 发现缺失翻译。
 
 升级后在 PowerShell 7 中运行（只检查，不自动修改基线）：
 
@@ -70,7 +70,7 @@ Bigpowers 与 pi-subagents 提示模板已收录。`skill:<name>` 优先使用�
 node "$HOME\.pi\agent\extensions\command-menu-zh\verify.mjs" "<当前 Pi 安装目录>\node_modules"
 ```
 
-已在 Pi 1.1.0 上通过 24 个内置命令、156 个第三方翻译、249 处源码字面量命令／模板匹配覆盖，以及真实补全提供者、补全结果保持、未知命令回退、文件隔离、重复包装不重复翻译、自定义编辑器构造和非 TUI 模式跳过测试。动态名称（BTW 表、MCP 别名和 Fusion 模型选择器）与变量名注册（如 `/todos`）人工核对。真实终端视觉效果需要在交互会话中确认。
+已在 Pi 1.1.0 上通过 24 个内置命令、2 个随安装分发的内置扩展命令（`/llama`、`/mcp`，由 `dist/extensions/*/index.js` 注册，脚本从传入的安装目录读取）、156 个第三方翻译、249 处源码字面量命令／模板匹配覆盖，以及真实补全提供者、补全结果保持、未知命令回退、文件隔离、重复包装不重复翻译、自定义编辑器构造和非 TUI 模式跳过测试。动态名称（BTW 表、MCP 别名和 Fusion 模型选择器）与变量名注册（如 `/todos`）人工核对。真实终端视觉效果需要在交互会话中确认。
 
 ## 停用
 

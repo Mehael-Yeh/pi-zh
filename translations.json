@@ -25,5 +25,6 @@
   "quit": "退出 Pi",
   "languages": "选择扩展界面语言",
   "mcp": "管理 MCP 服务",
+  "llama": "管理 llama.cpp 路由上的模型",
   "skill:": "加载技能"
 }

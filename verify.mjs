@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 // Verification only: pass the installed node_modules path, not used by the extension.
 const modules = process.argv[2];
@@ -66,3 +66,15 @@ factory = undefined;
 handler({}, { mode: 'json', ui: ctx.ui });
 assert.equal(factory, undefined);
 console.log(`PASS: ${BUILTIN_SLASH_COMMANDS.length} built-in translations; fallback, completion preservation, file isolation, idempotence, editor construction, non-TUI guard.`);
+// Commands registered by Pi's own bundled extensions (dist/extensions/*/index.js) are
+// not listed in BUILTIN_SLASH_COMMANDS, so they are read from the install directory.
+const bundledDir = new URL('@earendil-works/pi-coding-agent/dist/extensions/', pathToFileURL(`${modules}/`));
+const bundledCommands = [];
+for (const dirent of existsSync(bundledDir) ? readdirSync(bundledDir, { withFileTypes: true }) : []) {
+  if (!dirent.isDirectory()) continue;
+  const script = new URL(`${dirent.name}/index.js`, bundledDir);
+  if (!existsSync(script)) continue;
+  for (const match of readFileSync(script, 'utf8').matchAll(/\.registerCommand\(\s*["']([^"']+)["']/g)) bundledCommands.push(match[1]);
+}
+for (const name of bundledCommands) assert.ok(dictionary[name], `missing bundled-extension command: ${name}`);
+console.log(`PASS: ${bundledCommands.length} bundled-extension commands translated (${bundledCommands.join(', ')}).`);
