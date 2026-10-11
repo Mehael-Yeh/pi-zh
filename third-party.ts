@@ -167,4 +167,7 @@ export const thirdParty: Record<string, string> = {
   "wire-ci": "配置并验证持续集成",
   "wire-observability": "配置结构化日志与可观测性",
   "write-document": "编写和整理技术文档",
+  // @juicesharp/rpiv-todo@2.12.0 (todo.ts, COMMAND_NAME = "todos").
+  "todos": "按状态分组列出当前分支的全部待办",
+  // @juicesharp/rpiv-ask-user-question@2.12.0 与 openwiki@0.7.2 只注册工具和技能（openwiki 另提供 skill:openwiki），没有斜杠命令。
 };

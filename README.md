@@ -30,6 +30,7 @@ git clone https://github.com/Mehael-Yeh/pi-command-menu-zh.git command-menu-zh
 | `third-party.ts` | 第三方 npm 包命令词典（含别名、条件命令、提示模板） |
 | `translations.json` | 用户自定义翻译，优先于第三方词典 |
 | `upgrade-baseline.json` | 审核时记录的包文件 SHA-256 基线 |
+| `baseline-archive/` | 历次审核确认后的旧基线存档，便于追溯 |
 | `check-upgrades.ps1` | 升级后检查基线是否漂移（只检查，不改动） |
 | `verify.mjs` | 手动验证脚本，不随 Pi 自动加载 |
 
@@ -39,9 +40,9 @@ git clone https://github.com/Mehael-Yeh/pi-command-menu-zh.git command-menu-zh
 
 ## 第三方命令与升级检查
 
-`third-party.ts` 收录当前 settings.json 中 8 个 npm 包的 155 个命令名称（包含别名、条件命令、内部桥接命令和提示模板）。每组注释标记审核时的包版本；`upgrade-baseline.json` 记录代码、提示模板及技能文档的 SHA-256。实际显示的命令仍由第三方包配置和当前模式决定，词典不注册或启用命令。
+`third-party.ts` 收录当前 settings.json 中 11 个 npm 包的 156 个命令名称（包含别名、条件命令、内部桥接命令和提示模板）。每组注释标记审核时的包版本；`upgrade-baseline.json` 记录代码、提示模板及技能文档的 SHA-256。实际显示的命令仍由第三方包配置和当前模式决定，词典不注册或启用命令。
 
-Bigpowers 与 pi-subagents 提示模板已收录。`skill:<name>` 优先使用同名命令翻译，其他技能仅增加“加载技能”并保留原说明。MCP 服务动态下发的提示命令无法通过包源码穷举；当前 amap-maps 缓存未发现提示目录。未来新包、新模板或动态命令需要再次检查并补充。
+Bigpowers 与 pi-subagents 提示模板已收录。`skill:<name>` 优先使用同名命令翻译，其他技能仅增加“加载技能”并保留原说明。`@juicesharp/rpiv-todo` 提供 `/todos`；`@juicesharp/rpiv-ask-user-question` 与 `openwiki` 只注册工具和技能（openwiki 另提供 `skill:openwiki`），没有斜杠命令，因此只由通用技能翻译覆盖。MCP 服务动态下发的提示命令无法通过包源码穷举；当前 amap-maps 缓存未发现提示目录。未来新包、新模板或动态命令需要再次检查并补充。
 
 用户 `translations.json` 优先于第三方默认词典，可覆盖说明。
 
@@ -51,7 +52,7 @@ Bigpowers 与 pi-subagents 提示模板已收录。`skill:<name>` 优先使用�
 & "$HOME\.pi\agent\extensions\command-menu-zh\check-upgrades.ps1"
 ```
 
-版本或源文件变化将列出 VERSION／CHANGED／ADDED／REMOVED，并以退出码 1 提示人工复核。脚本要求 PowerShell 7。不自动更新翻译，不改动任何第三方文件。确认变化并修改词典后，再显式移走旧基线并用 `-Capture` 建立新基线；保留旧文件便于追溯。
+版本或源文件变化将列出 VERSION／CHANGED／ADDED／REMOVED，并以退出码 1 提示人工复核。脚本要求 PowerShell 7。不自动更新翻译，不改动任何第三方文件。确认变化并修改词典后，再把旧基线移入 `baseline-archive/` 并用 `-Capture` 建立新基线；保留旧文件便于追溯。
 
 ## 持久化与边界
 
@@ -69,7 +70,7 @@ Bigpowers 与 pi-subagents 提示模板已收录。`skill:<name>` 优先使用�
 node "$HOME\.pi\agent\extensions\command-menu-zh\verify.mjs" "<当前 Pi 安装目录>\node_modules"
 ```
 
-已在 Pi 1.1.0 上通过 24 个内置命令、155 个第三方翻译、249 处源码字面量命令／模板匹配覆盖，以及真实补全提供者、补全结果保持、未知命令回退、文件隔离、重复包装不重复翻译、自定义编辑器构造和非 TUI 模式跳过测试。动态名称（BTW 表、MCP 别名和 Fusion 模型选择器）人工核对。真实终端视觉效果需要在交互会话中确认。
+已在 Pi 1.1.0 上通过 24 个内置命令、156 个第三方翻译、249 处源码字面量命令／模板匹配覆盖，以及真实补全提供者、补全结果保持、未知命令回退、文件隔离、重复包装不重复翻译、自定义编辑器构造和非 TUI 模式跳过测试。动态名称（BTW 表、MCP 别名和 Fusion 模型选择器）与变量名注册（如 `/todos`）人工核对。真实终端视觉效果需要在交互会话中确认。
 
 ## 停用
 
