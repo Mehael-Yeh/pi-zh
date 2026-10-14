@@ -304,9 +304,83 @@
     "cycle inherit/+/-": "循环：继承 / + / -",
     "project load": "项目加载",
     "project unload": "项目卸载",
-    "inherited global": "继承的全局"
+    "inherited global": "继承的全局",
+    "System (matches your terminal colors)": "跟随系统（与终端配色一致）",
+    "Share anonymous usage data": "共享匿名使用数据",
+    "Don't share": "不共享",
+    "skip setup": "跳过设置",
+    "Upload failed": "上传失败",
+    "Export as Zip": "导出为 Zip",
+    "Report a bug": "报告 Bug",
+    "Bug report": "Bug 报告",
+    "Upload Report": "上传报告",
+    "Failed to parse gist ID from gh output": "无法从 gh 输出解析 gist ID",
+    "GitHub CLI (gh) is not installed. Install it from https://cli.github.com/": "未安装 GitHub CLI（gh），请从 https://cli.github.com/ 安装。",
+    "to copy": "复制",
+    "Copied URL to clipboard": "已复制 URL 到剪贴板",
+    "Compacting context": "正在压缩上下文"
   },
   "patterns": [
+    [
+      "^↑ (\\d+) more$",
+      "↑ 还有 $1 行"
+    ],
+    [
+      "^Writing summary with (.*)\\.\\.\\.$",
+      "正在用 $1 生成摘要…"
+    ],
+    [
+      "^Attach a summary written by (.*) instead\\?$",
+      "改为附加由 $1 生成的摘要？"
+    ],
+    [
+      "^Bug report uploaded\\. Report ID: (.*)$",
+      "Bug 报告已上传。报告 ID：$1"
+    ],
+    [
+      "^Bug report exported to: (.*)$",
+      "Bug 报告已导出到：$1"
+    ],
+    [
+      "^Failed to write bug report summary: (.*)$",
+      "写入 Bug 报告摘要失败：$1"
+    ],
+    [
+      "^Failed to write bug report: (.*)$",
+      "写入 Bug 报告失败：$1"
+    ],
+    [
+      "^Failed to build bug report: (.*)$",
+      "构建 Bug 报告失败：$1"
+    ],
+    [
+      "^Failed to export session: (.*)$",
+      "导出会话失败：$1"
+    ],
+    [
+      "^Failed to upload Radius artifact: (.*)$",
+      "上传 Radius 产物失败：$1"
+    ],
+    [
+      "^Failed to create gist: (.*)$",
+      "创建 gist 失败：$1"
+    ],
+    [
+      "^Share URL: (.*)$",
+      "分享链接：$1"
+    ],
+    [
+      "^(.*) submit  (.*) cancel$",
+      "$1 提交  $2 取消"
+    ],
+    [
+      "external editor",
+      "外部编辑器"
+    ],
+    [
+      "Jump to latest message",
+      "跳到最后一条消息"
+    ],
     [
       "^([○◉] Current Folder \\| [○◉] All)\\s+Name: (.*?)\\s+Sort: (.*)$",
       "$1  名称：$2  排序：$3"
