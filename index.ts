@@ -33,7 +33,8 @@ export function wrapProvider(provider: AutocompleteProvider, dictionary: Record<
 
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", (_event, ctx) => {
-    if (ctx.mode !== "tui") return;
+    // PI_UI_ZH_FORCE=1 是诊断开关：非 TUI 模式下也安装（只写日志，不改界面）。
+    if (ctx.mode !== "tui" && process.env.PI_UI_ZH_FORCE !== "1") return;
     installCommandMenu(ctx);
     installUi(ctx);
   });
@@ -61,10 +62,15 @@ function installCommandMenu(ctx: ExtensionContext): void {
   }
 }
 
-/** 内置界面（设置、主题、模型、思考级别…）中文注释。设置 PI_UI_ZH=0 可临时关闭。 */
+/** 内置界面（设置、主题、模型、思考级别…）中文注释。设置 PI_UI_ZH=0 可临时关闭，PI_UI_ZH_LOG=0 关闭诊断日志。 */
 function installUi(ctx: ExtensionContext): void {
   if (process.env.PI_UI_ZH === "0" || process.env.PI_UI_ZH === "off") return;
-  void installUiZh({ piRoot: process.env.PI_UI_ZH_ROOT, log: () => { } }).catch((error: unknown) => {
+  void installUiZh({ piRoot: process.env.PI_UI_ZH_ROOT, context: `mode=${ctx.mode} argv1=${process.argv[1] ?? "?"} cwd=${process.cwd()}` }).then((result) => {
+    // 一处补丁都没装上说明类没找到（失败模式很安静），必须让用户看到。
+    if (result.patched.length === 0) {
+      ctx.ui.notify("界面汉化未生效：没有找到可打补丁的界面类（详见扩展目录 ui-zh.log）", "warning");
+    }
+  }).catch((error: unknown) => {
     ctx.ui.notify(`界面汉化未启用：${error instanceof Error ? error.message : String(error)}`, "warning");
   });
 }
