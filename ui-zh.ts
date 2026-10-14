@@ -408,10 +408,14 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
   };
   const dict: UiDictionary = options.dictionary ?? loadDictionary();
   const globals = globalThis as Record<string | symbol, any>;
-  if (globals[INSTALL_FLAG]) {
+  // 注意：/reload 会在同一进程里重新加载扩展，而 globalThis 会保留。
+  // 若上次安装是 0 处补丁（例如旧版本残留），必须重新安装而不是直接返回缓存。
+  const cached = globals[INSTALL_FLAG] as UiZhResult | undefined;
+  if (cached && cached.patched.length > 0) {
     log("界面汉化已安装过，跳过");
-    return { ...(globals[INSTALL_FLAG] as UiZhResult) };
+    return { ...cached };
   }
+  if (cached) log("上次安装未生效（0 处补丁），重新安装");
 
   const piRoot = options.piRoot ?? resolvePiRoot() ?? null;
   if (!piRoot) throw new Error("找不到正在运行的 pi 安装目录（dist/bundle/chunks）");
