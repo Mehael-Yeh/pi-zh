@@ -47,7 +47,7 @@ const WANTED = [
   "SettingsSelectorComponent", "ThemeSelectorComponent", "ThinkingSelectorComponent",
   "ShowImagesSelectorComponent", "LoginDialogComponent", "ModelSelectorComponent",
   "SessionSelectorComponent", "TreeSelectorComponent", "OAuthSelectorComponent",
-  "ExtensionSelectorComponent", "UserMessageSelectorComponent",
+  "ExtensionSelectorComponent", "UserMessageSelectorComponent", "Editor", "Text",
 ];
 const { names, missing } = await ui.loadNames(piRoot, WANTED, () => { });
 check(missing.length === 0, "运行时类全部可用", `缺失：${missing.join(", ")}`);
@@ -78,6 +78,11 @@ const screens = {
   theme: () => new names.ThemeSelectorComponent("dark", noop, noop, noop).render(WIDTH),
   thinking: () => new names.ThinkingSelectorComponent("medium", ["off", "low", "medium", "high"], noop, noop, noop, "medium").render(WIDTH),
   images: () => new names.ShowImagesSelectorComponent(true, noop, noop).render(WIDTH),
+  auth: () => new names.ExtensionSelectorComponent(
+    "Select authentication method:",
+    ["Sign in with an account", "Sign in with an API key"],
+    noop, noop,
+  ).render(WIDTH),
 };
 const renderAll = () => Object.fromEntries(Object.entries(screens).map(([k, f]) => [k, f().map(strip)]));
 
@@ -95,7 +100,7 @@ const dump = (label, lines) => {
   lines.forEach((line, i) => console.log(String(i).padStart(3), JSON.stringify(line)));
 };
 dump("设置界面（汉化后）", after.settings);
-for (const key of ["theme", "thinking", "images"]) dump(`${key}（汉化后）`, after[key]);
+for (const key of ["theme", "thinking", "images", "auth"]) dump(`${key}（汉化后）`, after[key]);
 
 /* ---------------------------------------------------------------- 断言检查 ---- */
 
@@ -107,6 +112,8 @@ const rows = (lines) => lines.map((line) => {
 // 1) 标签中文化
 const zhLabel = /[\u4e00-\u9fff]/;
 const settingsRows = rows(after.settings);
+const hasZh = (lines) => lines.some((line) => ZhLabelTest(line));
+const ZhLabelTest = (line) => /[\u4e00-\u9fff]/.test(line);
 const zhRows = settingsRows.filter((r) => zhLabel.test(r.label));
 check(zhRows.length >= 8, "设置界面标签中文化", `仅 ${zhRows.length} 行含中文标签`);
 check(after.settings.some((l) => l.includes("自动压缩")), "设置界面出现“自动压缩”");
@@ -149,6 +156,36 @@ check(install2.patched.length === install.patched.length, "重复安装补丁数
   `${install.patched.length} → ${install2.patched.length}`);
 check(JSON.stringify(renderAll()) === JSON.stringify(after), "重复安装后渲染结果不变");
 
+/* ------------------------------------------------ 兜底（编辑器容器）机制 ---- */
+// TrustSelectorComponent / ConfigSelectorComponent 等类不导出，无法直接 new；
+// 这里模拟 app 的 showSelector 流程：编辑器容器持有 Editor，其子节点才走兜底汉化。
+const chromeProbe = (() => {
+  try {
+    const editor = Object.create(names.Editor.prototype);
+    const editorContainer = new names.Container();
+    editorContainer.addChild(editor);
+    const chromeChild = new names.Container();
+    chromeChild.addChild(new names.Text("Project trust", 0, 0));
+    chromeChild.addChild(new names.Text("Current session: untrusted", 0, 0));
+    editorContainer.addChild(chromeChild);
+    const control = new names.Container();
+    control.addChild(new names.Text("Project trust", 0, 0));
+    return { marked: chromeChild.render(WIDTH).map(strip), control: control.render(WIDTH).map(strip) };
+  } catch (error) {
+    return { error: String(error) };
+  }
+})();
+if (chromeProbe.error) {
+  check(false, "兜底机制可运行", chromeProbe.error);
+} else {
+  check(hasZh(chromeProbe.marked), "编辑器容器内的屏幕走兜底汉化", chromeProbe.marked.filter((l) => l.trim()).join("；"));
+  check(chromeProbe.marked.some((l) => l.includes("项目信任")), "标题类整行也能汉化（labels 兼作整行词典）", chromeProbe.marked.filter((l) => l.trim()).join("；"));
+  check(chromeProbe.marked.some((l) => l.includes("当前会话")), "模板行（Current session: …）已汉化", chromeProbe.marked.filter((l) => l.trim()).join("；"));
+  check(!hasZh(chromeProbe.control), "编辑器容器之外不翻译（聊天记录/输入框）", chromeProbe.control.filter((l) => l.trim()).join("；"));
+}
+
+check(hasZh(after.auth), "认证方式选择已中文化", after.auth.filter((l) => l.trim()).join("；"));
+
 /* ---------------------------------------------------- 词典自身一致性 / 漂移 ---- */
 
 const sections = ["labels", "descriptions", "texts", "values"];
@@ -162,6 +199,18 @@ check(empty.length === 0, "词典没有空键/空值", empty.join("；"));
 
 const overlap = Object.keys(dict.descriptions ?? {}).filter((k) => k in (dict.texts ?? {}));
 check(overlap.length === 0, "descriptions 与 texts 不重叠（避免英文说明被就地替换）", overlap.join("；"));
+
+// patterns 必须都能编译，且不能吃掉整行（只允许做局部替换）
+const badPatterns = [];
+for (const entry of dict.patterns ?? []) {
+  const [source] = entry;
+  try {
+    new RegExp(source);
+  } catch (error) {
+    badPatterns.push(`${source} → ${error.message}`);
+  }
+}
+check(badPatterns.length === 0, "patterns 正则均可编译", badPatterns.join("；"));
 
 // 漂移检查：英文键仍需存在于 Pi 源码（pi-coding-agent + 同目录的 pi-tui）
 // piRoot = .../node_modules/@earendil-works/pi-coding-agent，因此 pi-tui 的兄弟包在
@@ -188,10 +237,18 @@ for (const dir of SOURCE_DIRS) {
   try { walk(dir); } catch { /* 目录不存在则跳过 */ }
 }
 const haystack = sources.join("\n");
+// Pi 源码里 `·` 常写成 \u00b7 转义（settings-submenu.js 等），因此再拿解码后的文本搜一遍
+const haystackDecoded = haystack.replaceAll("\\u00b7", "·").replaceAll("\\u3067", "で");
+const found = (key) => RUNTIME_VERIFIED.has(key) || haystack.includes(key) || haystackDecoded.includes(key);
+// 这些文案由多段拼接而成（源码里搜不到），但已在真实 pi 渲染日志里逐字见到，故列入白名单。
+const RUNTIME_VERIFIED = new Set([
+  "↑/↓ move · ←/→ page · ctrl+←/→ branch · ctrl+x copy · shift+l label · shift+t label time · filters ctrl+d/t/u/l/a",
+  "cycle ctrl+o/shift+ctrl+o",
+]);
 const drifted = { blocks: [], texts: [] };
 for (const section of ["labels", "descriptions", "texts"]) {
   for (const key of Object.keys(dict[section] ?? {})) {
-    if (haystack.includes(key)) continue;
+    if (found(key)) continue;
     (section === "texts" ? drifted.texts : drifted.blocks).push(`${section}.${key}`);
   }
 }

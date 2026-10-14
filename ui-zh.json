@@ -59,7 +59,64 @@
     "medium": "中",
     "high": "高",
     "xhigh": "极高",
-    "max": "最大"
+    "max": "最大",
+    "No matching models": "没有匹配的模型",
+    "Model Name:": "模型名称：",
+    "Session Tree": "会话树",
+    "No entries found": "没有条目",
+    "Type to search:": "输入即搜索：",
+    "(aborted)": "（已中止）",
+    "(no content)": "（无内容）",
+    "label time": "标签时间",
+    "branch summary": "分支摘要",
+    "context edit": "上下文编辑",
+    "Label (empty to remove):": "标签（留空则移除）：",
+    "Resume Session (Current Folder)": "恢复会话（当前文件夹）",
+    "Resume Session (All)": "恢复会话（全部）",
+    "No sessions found": "没有会话",
+    "Current folder": "当前文件夹",
+    "Rename Session": "重命名会话",
+    "(on)": "（开）",
+    "(off)": "（关）",
+    "Model Configuration": "模型配置",
+    "all enabled": "全部启用",
+    "(unsaved)": "（未保存）",
+    "Model unavailable": "模型不可用",
+    "API key": "API 密钥",
+    "stored credential": "已保存的凭据",
+    "Select provider to configure:": "选择要配置的供应商：",
+    "Select provider to logout:": "选择要登出的供应商：",
+    "No providers available": "没有可用的供应商",
+    "No matching providers": "没有匹配的供应商",
+    "no providers": "无供应商",
+    "✓ configured": "✓ 已配置",
+    "• not configured": "• 未配置",
+    "System (matches your terminal colors)": "跟随系统（匹配终端配色）",
+    "Share anonymous usage data": "共享匿名使用数据",
+    "Don't share": "不共享",
+    "skip setup": "跳过设置",
+    "Project trust": "项目信任",
+    "No user messages found": "没有找到用户消息",
+    "Fork from Message": "从消息分叉",
+    "Built-in (project override)": "内置（项目覆盖）",
+    "User settings": "用户设置",
+    "Project settings": "项目设置",
+    "Project Local Resources": "项目本地资源",
+    "Global Resources": "全局资源",
+    "switch mode": "切换模式",
+    "cycle inherit/+/-": "循环 继承/+/-",
+    "No resources found": "没有找到资源",
+    "Report a bug": "报告问题",
+    "Bug report": "问题报告",
+    "Upload Report": "上传报告",
+    "Export as Zip": "导出为 Zip",
+    "Upload failed": "上传失败",
+    "(auto)": "（自动）",
+    "Empty regex": "空正则",
+    "Select authentication method:": "选择认证方式：",
+    "Sign in with an account": "使用账号登录",
+    "Sign in with an API key": "使用 API 密钥登录",
+    "Sign in with Radius": "使用 Radius 登录"
   },
   "descriptions": {
     "Warn when Anthropic subscription auth may use paid extra usage": "当 Anthropic 订阅认证可能使用付费额外用量时发出警告",
@@ -111,16 +168,16 @@
     "Deep reasoning (~16k tokens)": "深度推理（约 16k tokens）",
     "Extra-high reasoning (~32k tokens)": "超高推理（约 32k tokens）",
     "Maximum reasoning": "最大推理",
-    "(current)": "（当前）"
-  },
-  "texts": {
-    "Select a theme, or choose automatic to follow terminal appearance.": "选择主题，或选择“跟随系统”以匹配终端外观。",
+    "(current)": "（当前）",
+    "Select a theme, or choose automatic to follow terminal appearance.": "选择一个主题，或选择「跟随系统」以匹配终端外观。",
     "Choose themes for terminal light and dark appearance.": "为终端浅色/深色外观分别选择主题。",
     "Light/dark detection requires terminal support.": "浅色/深色检测需要终端支持。",
-    "Select the theme to use for light terminal appearance": "选择浅色终端外观使用的主题",
-    "Select the theme to use for dark terminal appearance": "选择深色终端外观使用的主题",
+    "Select the theme to use for light terminal appearance": "选择终端浅色外观使用的主题",
+    "Select the theme to use for dark terminal appearance": "选择终端深色外观使用的主题",
     "Select a model to configure": "选择要配置的模型",
-    "Select default thinking level for this model": "为该模型选择默认思考级别",
+    "Select default thinking level for this model": "为该模型选择默认思考级别"
+  },
+  "texts": {
     "Automatic Theme": "自动主题",
     "Light Theme": "浅色主题",
     "Dark Theme": "深色主题",
@@ -132,11 +189,352 @@
     "No matching settings": "没有匹配的设置",
     "Type to filter · Enter to select · Esc to go back": "输入即过滤 · 回车选择 · Esc 返回",
     "Enter to select · Esc to go back": "回车选择 · Esc 返回",
-    "No matching commands": "没有匹配的命令"
+    "No matching commands": "没有匹配的命令",
+    "Refreshing model catalogs…": "正在刷新模型目录…",
+    "Only showing models from configured providers. Use /login to add providers.": "只显示已配置供应商的模型。用 /login 添加供应商。",
+    "Model refresh timed out; showing cached models.": "刷新模型目录超时；显示缓存中的模型。",
+    "Model catalogs refreshed.": "模型目录已刷新。",
+    "(all/scoped)": "（全部/范围内）",
+    "no results": "无结果",
+    "↑/↓ move · ←/→ page · ctrl+←/→ branch · ctrl+x copy · shift+l label · shift+t label time · filters ctrl+d/t/u/l/a": "↑/↓ 移动 · ←/→ 翻页 · ctrl+←/→ 分支 · ctrl+x 复制 · shift+l 标签 · shift+t 标签时间 · 过滤器 ctrl+d/t/u/l/a",
+    "No sessions in current folder. Press Tab to view all.": "当前文件夹内没有会话。按 Tab 查看全部。",
+    "re:<pattern> regex · \"phrase\" exact": "re:<模式> 正则 · \"短语\" 精确匹配",
+    "Cannot delete the currently active session": "无法删除当前活动会话",
+    "Session moved to trash": "会话已移入回收站",
+    "Session deleted": "会话已删除",
+    "Unknown error": "未知错误",
+    "No providers logged in. Use /login first.": "没有已登录的供应商。请先用 /login。",
+    "Login cancelled": "登录已取消",
+    "Cmd+click to open": "Cmd+点击打开",
+    "Ctrl+click to open": "Ctrl+点击打开",
+    "Pick a theme.": "选择主题。",
+    "Opt-in to anonymous usage data sharing?": "是否选择共享匿名使用数据？",
+    "Select a user message to copy the active path up to that point into a new session": "选择一条用户消息，把它之前的活动路径复制到新会话",
+    "Bug report cancelled": "问题报告已取消",
+    "Uploading bug reports requires online mode. Use Export as Zip instead.": "上传问题报告需要在线模式。请改用导出为 Zip。",
+    "Include the session transcript?": "是否包含会话记录？",
+    "Yes, include the transcript": "是，包含会话记录",
+    "Yes, generate a summary": "是，生成摘要",
+    "Uploading bug report...": "正在上传问题报告...",
+    "Share cancelled": "分享已取消",
+    "Uploading to Radius...": "正在上传到 Radius...",
+    "Creating gist...": "正在创建 gist...",
+    "Pi session": "Pi 会话",
+    "GitHub CLI is not logged in. Run 'gh auth login' first.": "GitHub CLI 未登录。请先运行 'gh auth login'。",
+    "Select authentication method:": "选择认证方式：",
+    "Sign in with an account": "使用账号登录",
+    "Sign in with an API key": "使用 API 密钥登录",
+    "Sign in with Radius": "使用 Radius 登录"
   },
   "patterns": [
-    ["^\\s*(.*?)\\s*cycles thinking levels in-session\\s*$", "$1在会话内循环切换思考级别"],
-    ["^\\s*Enter to select · (.*?)to set as default · Escape/Ctrl\\+C to cancel\\s*$", "回车选择 · $1设为默认 · Esc/Ctrl+C 取消"]
+    [
+      "^\\s*(.*?)\\s*cycles thinking levels in-session\\s*$",
+      "$1在会话内循环切换思考级别"
+    ],
+    [
+      "^\\s*Enter to select · (.*?)to set as default · Escape/Ctrl\\+C to cancel\\s*$",
+      "回车选择 · $1设为默认 · Esc/Ctrl+C 取消"
+    ],
+    [
+      "^(\\S+) to select · (\\S+) to set as default · (\\S+) to cancel$",
+      "$1 选择 · $2 设为默认 · $3 取消"
+    ],
+    [
+      "^Model Name: (.*)$",
+      "模型名称：$1"
+    ],
+    [
+      "^Scope: (.*)$",
+      "范围：$1"
+    ],
+    [
+      "^Could not refresh (.*); showing cached models\\.$",
+      "无法刷新 $1；显示缓存中的模型。"
+    ],
+    [
+      "^Could not refresh model catalogs: (.*)$",
+      "无法刷新模型目录：$1"
+    ],
+    [
+      " · default$",
+      " · 默认"
+    ],
+    [
+      "^Type to search: (.*)$",
+      "输入即搜索：$1"
+    ],
+    [
+      "^user: (.*)$",
+      "用户：$1"
+    ],
+    [
+      "^assistant: (.*)$",
+      "助手：$1"
+    ],
+    [
+      "\\[no-tools\\]",
+      "[无工具]"
+    ],
+    [
+      "\\[user\\]",
+      "[仅用户]"
+    ],
+    [
+      "\\[labeled\\]",
+      "[有标签]"
+    ],
+    [
+      "\\[all\\]",
+      "[全部]"
+    ],
+    [
+      "\\[\\+label time\\]",
+      "[+标签时间]"
+    ],
+    [
+      "\\[branch summary\\]",
+      "[分支摘要]"
+    ],
+    [
+      "\\[context omit: (.*)\\]",
+      "[上下文省略：$1]"
+    ],
+    [
+      "\\[context replace: (.*)\\]",
+      "[上下文替换：$1]"
+    ],
+    [
+      "\\[compaction: (.*)\\]",
+      "[压缩：$1]"
+    ],
+    [
+      "\\[model: (.*)\\]",
+      "[模型：$1]"
+    ],
+    [
+      "\\[thinking: (.*)\\]",
+      "[思考：$1]"
+    ],
+    [
+      "\\[custom: (.*)\\]",
+      "[自定义：$1]"
+    ],
+    [
+      "\\[label: (.*)\\]",
+      "[标签：$1]"
+    ],
+    [
+      "\\[title: ",
+      "[标题： "
+    ],
+    [
+      "\\[read: (.*)\\]",
+      "[读取：$1]"
+    ],
+    [
+      "\\[write: (.*)\\]",
+      "[写入：$1]"
+    ],
+    [
+      "\\[edit: (.*)\\]",
+      "[编辑：$1]"
+    ],
+    [
+      "\\[bash: (.*)\\]",
+      "[bash：$1]"
+    ],
+    [
+      "\\[grep: (.*)\\]",
+      "[grep：$1]"
+    ],
+    [
+      "\\[find: (.*)\\]",
+      "[查找：$1]"
+    ],
+    [
+      "\\[ls: (.*)\\]",
+      "[列目录：$1]"
+    ],
+    [
+      "^Sort: (.*)$",
+      "排序：$1"
+    ],
+    [
+      "^Name: (.*)$",
+      "名称：$1"
+    ],
+    [
+      "◉ Current Folder",
+      "◉ 当前文件夹"
+    ],
+    [
+      "○ Current Folder",
+      "○ 当前文件夹"
+    ],
+    [
+      "\\| ◉ All",
+      "| ◉ 全部"
+    ],
+    [
+      "\\| ○ All",
+      "| ○ 全部"
+    ],
+    [
+      "^Delete session\\? (.*) to confirm · (.*) to cancel$",
+      "删除会话？$1 确认 · $2 取消"
+    ],
+    [
+      "^  No named sessions found\\. Press (.*) to show all\\.$",
+      "  没有命名会话。按 $1 查看全部。"
+    ],
+    [
+      "^  No named sessions in current folder\\. Press (.*) to show all, or Tab to view all\\.$",
+      "  当前文件夹内没有命名会话。按 $1 查看全部，或按 Tab 查看所有。"
+    ],
+    [
+      "^Failed to load sessions: (.*)$",
+      "加载会话失败：$1"
+    ],
+    [
+      "^Failed to delete: (.*)$",
+      "删除失败：$1"
+    ],
+    [
+      "^path (.*)$",
+      "路径 $1"
+    ],
+    [
+      "^Session-only\\. (.*) to save to settings\\.$",
+      "仅本次会话。$1 保存到设置。"
+    ],
+    [
+      "^(\\S+) toggle · (\\S+) all · (\\S+) clear · (\\S+) provider · ([\\S/]+) reorder · (\\S+) save$",
+      "$1 切换 · $2 全选 · $3 清空 · $4 按供应商 · $5 排序 · $6 保存"
+    ],
+    [
+      "^(\\d+)/(\\d+) enabled$",
+      "已启用 $1/$2"
+    ],
+    [
+      "\\[unavailable\\]",
+      "[不可用]"
+    ],
+    [
+      "^(\\S+) configured$",
+      "$1 已配置"
+    ],
+    [
+      "^env: (.*)$",
+      "环境变量：$1"
+    ],
+    [
+      "^Login to (.*)$",
+      "登录到 $1"
+    ],
+    [
+      "^Enter code: (.*)$",
+      "输入代码：$1"
+    ],
+    [
+      "^e\\.g\\., (.*)$",
+      "例如，$1"
+    ],
+    [
+      "^Welcome to (.*), the minimal coding agent\\.$",
+      "欢迎使用 $1，极简编码代理。"
+    ],
+    [
+      "^(.*) \\(inherited from (.*)\\)$",
+      "$1（继承自 $2）"
+    ],
+    [
+      "^Saved decision: (.*)$",
+      "已保存的决定：$1"
+    ],
+    [
+      "^Current session: (.*)$",
+      "当前会话：$1"
+    ],
+    [
+      "^Message (\\d+) of (\\d+)$",
+      "第 $1 条，共 $2 条"
+    ],
+    [
+      "^User \\((.*)\\)$",
+      "用户（$1）"
+    ],
+    [
+      "^Project \\((.*)\\)$",
+      "项目（$1）"
+    ],
+    [
+      "^  project load$",
+      "  项目加载"
+    ],
+    [
+      "^  project unload$",
+      "  项目卸载"
+    ],
+    [
+      "^  inherited global$",
+      "  继承的全局"
+    ],
+    [
+      "(.*) · inherited global$",
+      "$1 · 继承自全局"
+    ],
+    [
+      "^(\\S+)/settings\\.json · inherited global resources are dimmed$",
+      "$1/settings.json · 继承的全局资源以浅色显示"
+    ],
+    [
+      "^Retrying \\((\\d+)/(\\d+)\\) in (\\d+)s\\.\\.\\. \\((.*) to cancel\\)$",
+      "重试中（$1/$2）$3 秒后...（$4 取消）"
+    ],
+    [
+      "^\\((.*) to cancel\\)$",
+      "（$1 取消）"
+    ],
+    [
+      "^Compacting context\\.\\.\\. (.*)$",
+      "正在压缩上下文... $1"
+    ],
+    [
+      "^Auto-compacting\\.\\.\\. (.*)$",
+      "正在自动压缩... $1"
+    ],
+    [
+      "^Context overflow detected, Auto-compacting\\.\\.\\. (.*)$",
+      "检测到上下文溢出，正在自动压缩... $1"
+    ],
+    [
+      "^Summarizing branch\\.\\.\\. \\((.*) to cancel\\)$",
+      "正在总结分支...（$1 取消）"
+    ],
+    [
+      "cycle ctrl\\+o/shift\\+ctrl\\+o",
+      "循环 ctrl+o/shift+ctrl+o"
+    ],
+    [
+      "↑↓ navigate",
+      "↑↓ 移动"
+    ],
+    [
+      "^Saved decision: none$",
+      "已保存的决定：无"
+    ],
+    [
+      "\\[ \\] ",
+      "[ ] "
+    ],
+    [
+      "^↑↓ 移动  (.*) select  (.*) cancel$",
+      "↑↓ 移动  $1 选择  $2 取消"
+    ],
+    [
+      "^↑↓ navigate  (.*) select  (.*) cancel$",
+      "↑↓ 移动  $1 选择  $2 取消"
+    ]
   ],
   "values": {
     "true": "开",
@@ -177,6 +575,8 @@
     "1 min": "1 分钟",
     "2 min": "2 分钟",
     "5 min": "5 分钟",
-    "disabled": "已禁用"
+    "disabled": "已禁用",
+    "trusted": "已信任",
+    "untrusted": "未信任"
   }
 }

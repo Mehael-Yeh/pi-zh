@@ -66,10 +66,19 @@ function getDebugLog(): (message: string) => void {
   if (process.env.PI_UI_ZH_LOG === "0") return debugLog;
   try {
     const file = fileURLToPath(new URL("./ui-zh.log", import.meta.url));
-    writeFileSync(file, `pi-zh 界面汉化日志 ${new Date().toISOString()}  node ${process.version}\n`);
+    const stamp = `pi-zh 界面汉化日志 ${new Date().toISOString()}  node ${process.version}\n`;
+    // 默认追加（/reload 会重建模块，覆盖会丢掉上一次的记录）；超过 1MB 才重置。
+    let small = false;
+    try {
+      small = existsSync(file) && readFileSync(file).length < 1024 * 1024;
+    } catch {
+      small = false;
+    }
+    if (small) appendFileSync(file, `\n===== ${stamp}`);
+    else writeFileSync(file, stamp);
     let lines = 0;
     debugLog = (message: string) => {
-      if (lines++ >= 600) return;
+      if (lines++ >= 800) return;
       try {
         appendFileSync(file, `${message}\n`);
       } catch {
@@ -423,7 +432,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
   if (options.context) log(`[context] ${options.context}`);
 
   const wanted = [
-    "SettingsList", "SelectList", "Container", "Text", "Spacer",
+    "SettingsList", "SelectList", "Container", "Text", "Spacer", "Editor", "VStack", "Box", "ScrollView",
     "SettingsSelectorComponent", "ThemeSelectorComponent", "ShowImagesSelectorComponent",
     "ThinkingSelectorComponent", "LoginDialogComponent", "ModelSelectorComponent",
     "SessionSelectorComponent", "TreeSelectorComponent", "OAuthSelectorComponent",
@@ -473,7 +482,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
         if (out === line) {
           const text = analyzeLine(line).plain.trim();
           // 只记录“还没中文且含英文字母”的候选行，作为补词典的清单（已汉化/纯装饰行不入日志）。
-          if (text && /[A-Za-z]/.test(text) && !/[\u3400-\u9fff\u3040-\u30ff]/.test(text) && untranslated.size < 200 && !untranslated.has(text)) {
+          if (text && /[A-Za-z]/.test(text) && !/[\u3400-\u9fff\u3040-\u30ff]/.test(text) && untranslated.size < 400 && !untranslated.has(text)) {
             untranslated.add(text);
             log(`[未译] ${JSON.stringify(text)}`);
           }
@@ -553,6 +562,55 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     each(name, (Cls) => patchRender(Cls, (_self, lines, width) => engine(name)(lines, width)));
   }
 
+  // 5) 兜底：挂到“编辑器容器”里的屏幕（/trust、/config、首次运行等类未导出的对话框）。
+  //    editorContainer = 持有 Editor 的那个 Container；只有它的子节点会被翻译，
+  //    聊天记录（ScrollView）与输入框绝不经过这里。
+  const editorClass = candidates["Editor"]?.[0]?.value;
+  const editorContainers = new WeakSet<object>();
+  const chromeRoots = new WeakSet<object>();
+  let chromeCount = 0;
+  const markChrome = (container: any, child: any): void => {
+    try {
+      if (!child || typeof child !== "object") return;
+      if (editorClass && child instanceof editorClass) {
+        editorContainers.add(container); // 编辑器被加回来 ⇒ 这个容器就是编辑器容器
+        return;
+      }
+      if (!editorContainers.has(container) || chromeRoots.has(child)) return;
+      chromeRoots.add(child);
+      const Cls = child.constructor;
+      if (Cls?.prototype && typeof Cls.prototype.render === "function" && !Cls.prototype[RENDER_FLAG]) {
+        if (patchRender(Cls, (self, lines, width) => (chromeRoots.has(self) ? engine("chrome")(lines, width) : lines))) {
+          chromeCount++;
+          log(`[chrome] ${Cls.name || "(匿名类)"} 加入兜底汉化`);
+        }
+      }
+    } catch (error) {
+      log(`[chrome] 标记失败：${errText(error)}`);
+    }
+  };
+  const patchAddChild = (Cls: any): void => {
+    const proto = Cls?.prototype;
+    if (!proto || typeof proto.addChild !== "function") return;
+    const key = Symbol.for("pi.uiZh.addChildPatched");
+    if (proto[key]) return;
+    const original = proto.addChild;
+    proto.addChild = function (this: any, child: any) {
+      markChrome(this, child);
+      return original.call(this, child);
+    };
+    proto[key] = true;
+  };
+  if (editorClass) {
+    for (const name of ["Container", "VStack", "Box", "ScrollView"]) {
+      for (const cand of candidates[name] ?? []) patchAddChild(cand.value);
+    }
+    each("Container", (Container) => patchRender(Container, (self, lines, width) => (chromeRoots.has(self) ? engine("chrome")(lines, width) : lines)));
+    log(`[chrome] addChild 挂钩就绪；兜底补丁 ${chromeCount} 个类`);
+  } else {
+    log("[chrome] 未取到 Editor 类，跳过兜底汉化（/trust、/config 等仍为英文）");
+  }
+
   const result: UiZhResult = { piRoot, chunks, patched, missing };
   globals[INSTALL_FLAG] = result;
   if (patched.length === 0) {
@@ -575,7 +633,8 @@ function translateLine(
   const trimmed = plain.trim();
   if (!trimmed) return line;
 
-  const whole = lookupText(dict, trimmed);
+  // 整行匹配先查 texts，再退到 labels（同一个键可能既是列表标签又是独立标题行，例如 “Project trust”）。
+  const whole = lookupText(dict, trimmed) ?? lookupLabel(dict, trimmed);
   if (whole) {
     const start = plain.length - plain.trimStart().length;
     const end = plain.trimEnd().length;
