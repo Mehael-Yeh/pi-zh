@@ -24,6 +24,8 @@ export interface UiDictionary {
   /** 列表项说明：只用于追加「中文：…」行与 SelectList 行内说明，不会就地替换英文原文。 */
   descriptions?: Record<string, string>;
   texts?: Record<string, string>;
+  /** 聊天区极少数界面标题（如 /hotkeys 的 “Keyboard Shortcuts”）：按原文精确匹配，只用于全局主题包装。 */
+  chromeTitles?: Record<string, string>;
   values?: Record<string, string>;
   /** 含动态内容（按键提示、级别等）的整行：正则 → 替换文本，$1 等可用。 */
   patterns?: [string, string][];
@@ -56,7 +58,7 @@ const INSTALL_FLAG = Symbol.for("pi.uiZh.installed");
 const DICT_FLAG = Symbol.for("pi.uiZh.dict");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 2;
+const CODE_VERSION = 3;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
@@ -452,6 +454,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
 
   const wanted = [
     "SettingsList", "SelectList", "Container", "Text", "Spacer", "Editor", "VStack", "Box", "ScrollView",
+    "Markdown", "theme",
     "SettingsSelectorComponent", "ThemeSelectorComponent", "ShowImagesSelectorComponent",
     "ThinkingSelectorComponent", "LoginDialogComponent", "ModelSelectorComponent",
     "SessionSelectorComponent", "TreeSelectorComponent", "OAuthSelectorComponent",
@@ -630,6 +633,77 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     log("[chrome] 未取到 Editor 类，跳过兜底汉化（/trust、/config 等仍为英文）");
   }
 
+  // 6) /hotkeys 这类“打印到聊天区”的界面输出：只处理含 Key|Action 画框表格的 Markdown 块，
+  //    所以模型回复（普通 Markdown）绝不受影响；标题行 “Keyboard Shortcuts” 走全局主题包装。
+  each("Markdown", (Markdown) =>
+    patchRender(Markdown, (_self, lines, width) => {
+      let isHotkeys = false;
+      for (const line of lines) {
+        if (HOTKEY_HEADER_RE.test(analyzeLine(line).plain.trim())) {
+          isHotkeys = true;
+          break;
+        }
+      }
+      if (!isHotkeys) return lines;
+      return lines.map((line) => {
+        const table = translateTableRow(dict, line, visibleWidth, truncateToWidth);
+        return table !== line ? table : translateLine(dict, line, width, visibleWidth, truncateToWidth);
+      });
+    }),
+  );
+  const chromeTitles = dict.chromeTitles ?? {};
+  if (Object.keys(chromeTitles).length > 0) {
+    const translateTitle = (method: string, original: (...args: any[]) => any) =>
+      function (this: any, ...args: any[]) {
+        const last = args.length - 1;
+        const text = args[last];
+        if (typeof text === "string" && text.length <= 80) {
+          const zh = chromeTitles[text.trim()];
+          if (zh) args[last] = zh;
+        }
+        return original.apply(this, args);
+      };
+    for (const cand of candidates["theme"] ?? []) {
+      const themeObject = cand.value;
+      // theme 单例是跨 realm 代理（对实例赋值/defineProperty 都无效）：只能改它的原型。
+      const proto = themeObject?.constructor?.prototype;
+      if (!proto) continue;
+      for (const method of ["fg", "bold"]) {
+        const original = proto[method];
+        if (typeof original !== "function") continue;
+        const guard = Symbol.for(`pi.uiZh.titlePatched.${method}`);
+        if (proto[guard]) continue;
+        try {
+          Object.defineProperty(proto, method, {
+            value: translateTitle(method, original),
+            configurable: true,
+            writable: true,
+          });
+        } catch (error) {
+          log(`[patch] theme.${method} 失败：${errText(error)}`);
+          continue;
+        }
+        // 自检：包装后必须真的能翻出一个标题，否则说明代理拦住了写入。
+        try {
+          const sample = Object.keys(chromeTitles)[0];
+          const probe =
+            method === "fg"
+              ? String(proto.fg.call(themeObject, "accent", sample))
+              : String(proto.bold.call(themeObject, sample));
+          if (!probe.includes(chromeTitles[sample])) {
+            log(`[patch] theme.${method} 包装未生效（跨 realm 代理拦截），跳过`);
+            continue;
+          }
+        } catch (error) {
+          log(`[patch] theme.${method} 自检异常：${errText(error)}`);
+          continue;
+        }
+        proto[guard] = true;
+        patched.push(`theme.${method}@${cand.label}`);
+      }
+    }
+  }
+
   const result: UiZhResult = { piRoot, chunks, patched, missing, code: CODE_VERSION };
   globals[INSTALL_FLAG] = result;
   if (patched.length === 0) {
@@ -694,6 +768,45 @@ function translateLine(
 function padTo(text: string, target: number, vw: (s: string) => number): string {
   const got = vw(text);
   return got >= target ? text : text + " ".repeat(target - got);
+}
+
+/** /hotkeys 的画框表格表头：`│ Key │ Action │` —— 只有这种表格才允许被翻译。 */
+const HOTKEY_HEADER_RE = /^│\s*Key\s*│\s*Action\s*│/;
+
+/**
+ * 画框表格行（`│ 按键 │ 说明 │`）的单元格汉化：
+ * 只替换命中词典的单元格，并保持该单元格的可视宽度不变（否则右侧边框会错位）。
+ * 从右往左替换，左侧单元格的原始下标因此始终有效。
+ */
+function translateTableRow(
+  dict: UiDictionary,
+  line: string,
+  vw: (s: string) => number,
+  truncate: (s: string, w: number, ellipsis?: string) => string,
+): string {
+  const { plain, map } = analyzeLine(line);
+  if (!plain.includes("│")) return line;
+  const cells: { text: string; start: number }[] = [];
+  let index = 0;
+  for (const text of plain.split("│")) {
+    cells.push({ text, start: index });
+    index += text.length + 1;
+  }
+  if (cells.length !== 4) return line;
+  let out = line;
+  for (let i = 2; i >= 1; i--) {
+    const cell = cells[i];
+    const body = cell.text.trim();
+    if (!body) continue;
+    const zh = lookupText(dict, body) ?? lookupLabel(dict, body);
+    if (!zh) continue;
+    const cellWidth = vw(cell.text);
+    const zhText = truncate(zh, Math.max(1, cellWidth - 1), "");
+    const rebuilt = ` ${zhText}${padTo("", cellWidth - 1 - vw(zhText), vw)}`;
+    const next = splicePlain(out, map, cell.start, cell.start + cell.text.length, rebuilt);
+    if (next !== out) out = next;
+  }
+  return out;
 }
 
 export function loadDictionary(url: URL | string = new URL("./ui-zh.json", import.meta.url)): UiDictionary {

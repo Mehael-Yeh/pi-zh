@@ -48,6 +48,7 @@ const WANTED = [
   "ShowImagesSelectorComponent", "LoginDialogComponent", "ModelSelectorComponent",
   "SessionSelectorComponent", "TreeSelectorComponent", "OAuthSelectorComponent",
   "ExtensionSelectorComponent", "UserMessageSelectorComponent", "Editor", "Text",
+  "Markdown", "getMarkdownTheme", "theme",
 ];
 const { names, missing } = await ui.loadNames(piRoot, WANTED, () => { });
 check(missing.length === 0, "运行时类全部可用", `缺失：${missing.join(", ")}`);
@@ -73,6 +74,21 @@ const cfg = {
 };
 const callbacks = new Proxy({}, { get: () => noop });
 
+const HOTKEYS_MD = [
+  "**Navigation**",
+  "| Key | Action |",
+  "|-----|--------|",
+  "| `↑` / `↓` | Move cursor / browse history |",
+  "| `←` / `→` | Move by word |",
+].join("\n");
+const PLAIN_MD = [
+  "**Navigation**",
+  "",
+  "- Move cursor / browse history",
+  "- Move by word",
+].join("\n");
+const renderMarkdown = (text) => new names.Markdown(text, 0, 0, names.getMarkdownTheme()).render(WIDTH);
+
 const screens = {
   settings: () => new names.SettingsSelectorComponent(cfg, callbacks).render(WIDTH),
   theme: () => new names.ThemeSelectorComponent("dark", noop, noop, noop).render(WIDTH),
@@ -83,6 +99,8 @@ const screens = {
     ["Sign in with an account", "Sign in with an API key"],
     noop, noop,
   ).render(WIDTH),
+  hotkeys: () => renderMarkdown(HOTKEYS_MD),
+  plainMarkdown: () => renderMarkdown(PLAIN_MD),
 };
 const renderAll = () => Object.fromEntries(Object.entries(screens).map(([k, f]) => [k, f().map(strip)]));
 
@@ -185,6 +203,20 @@ if (chromeProbe.error) {
 }
 
 check(hasZh(after.auth), "认证方式选择已中文化", after.auth.filter((l) => l.trim()).join("；"));
+
+/* ------------------------------------------- /hotkeys 画框表格（聊天区输出） ---- */
+check(after.hotkeys.some((l) => l.includes("按键") && l.includes("操作")), "hotkeys 表头已中文化", after.hotkeys.join("；"));
+check(after.hotkeys.some((l) => l.includes("移动光标 / 浏览历史")), "hotkeys 动作说明已中文化");
+check(after.hotkeys.some((l) => l.includes("按键") || l.includes("导航")), "hotkeys 小节/表头已中文化");
+check(after.hotkeys.some((l) => l.trim() === "导航"), "hotkeys 小节标题已中文化");
+check(after.hotkeys.some((l) => l.includes("↑ / ↓")), "hotkeys 键名列保持原文");
+const tableWidths = new Set(
+  after.hotkeys.filter((l) => /[│┌├└]/.test(l)).map((l) => vw(l.trimEnd())),
+);
+check(tableWidths.size === 1, "hotkeys 表格边框未错位", [...tableWidths].join(", "));
+check(!hasZh(after.plainMarkdown), "普通 Markdown（模型回复）不被翻译", after.plainMarkdown.filter((l) => l.trim()).join("；"));
+const titleText = strip(String(names.theme.fg("accent", "Keyboard Shortcuts")));
+check(titleText.includes("键盘快捷键"), "聊天区标题（Keyboard Shortcuts）已中文化", titleText);
 
 /* ---------------------------------------------------- 屏幕样例文案自测 ---- */
 // 取各屏幕源码里的代表性文案，走兜底（编辑器容器）通道渲染，确认词典确实覆盖。
@@ -331,6 +363,8 @@ const found = (key) => RUNTIME_VERIFIED.has(key) || haystack.includes(key) || ha
 const RUNTIME_VERIFIED = new Set([
   "↑/↓ move · ←/→ page · ctrl+←/→ branch · ctrl+x copy · shift+l label · shift+t label time · filters ctrl+d/t/u/l/a",
   "cycle ctrl+o/shift+ctrl+o",
+  // /hotkeys 的 Windows 变体由模板拼接：`New line${platform === "win32" ? " (Ctrl+Enter on Windows Terminal)" : ""}`
+  "New line (Ctrl+Enter on Windows Terminal)",
 ]);
 const drifted = { blocks: [], texts: [] };
 for (const section of ["labels", "descriptions", "texts"]) {

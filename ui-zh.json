@@ -318,7 +318,41 @@
     "GitHub CLI (gh) is not installed. Install it from https://cli.github.com/": "未安装 GitHub CLI（gh），请从 https://cli.github.com/ 安装。",
     "to copy": "复制",
     "Copied URL to clipboard": "已复制 URL 到剪贴板",
-    "Compacting context": "正在压缩上下文"
+    "Compacting context": "正在压缩上下文",
+    "Key": "按键",
+    "Action": "操作",
+    "Navigation": "导航",
+    "Editing": "编辑",
+    "Other": "其他",
+    "Extensions": "扩展",
+    "Move cursor / browse history": "移动光标 / 浏览历史",
+    "Move by word": "按词移动",
+    "Start of line": "行首",
+    "End of line": "行尾",
+    "Jump forward to character": "向前跳到指定字符",
+    "Jump backward to character": "向后跳到指定字符",
+    "Scroll by page": "按页滚动",
+    "Send message": "发送消息",
+    "New line": "换行",
+    "New line (Ctrl+Enter on Windows Terminal)": "换行（Windows Terminal 用 Ctrl+Enter）",
+    "Delete word backwards": "向前删除一个词",
+    "Delete word forwards": "向后删除一个词",
+    "Delete to start of line": "删除到行首",
+    "Delete to end of line": "删除到行尾",
+    "Paste the most-recently-deleted text": "粘贴最近删除的文本",
+    "Cycle through the deleted text after pasting": "粘贴后循环切换已删除的文本",
+    "Undo": "撤销",
+    "Path completion / accept autocomplete": "路径补全 / 接受自动补全",
+    "Cancel autocomplete / abort streaming": "取消自动补全 / 中止流式输出",
+    "Clear editor (first) / exit (second)": "清空输入框（一次）/ 退出（二次）",
+    "Exit (when editor is empty)": "退出（输入框为空时）",
+    "Cycle models": "循环切换模型",
+    "Toggle tool output expansion": "切换工具输出展开",
+    "Toggle thinking block visibility": "切换思考块显示",
+    "Edit message in external editor": "用外部编辑器编辑消息",
+    "Slash commands": "斜杠命令",
+    "Run bash command": "运行 bash 命令",
+    "Run bash command (excluded from context)": "运行 bash 命令（不计入上下文）"
   },
   "patterns": [
     [
@@ -904,5 +938,8 @@
     "disabled": "已禁用",
     "trusted": "已信任",
     "untrusted": "未信任"
+  },
+  "chromeTitles": {
+    "Keyboard Shortcuts": "键盘快捷键"
   }
 }
