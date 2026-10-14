@@ -172,6 +172,11 @@
     "resume-hint": "恢复提示",
     "hidden": "隐藏",
     "save and go back": "保存并返回",
-    "switch to single theme": "切换为单一主题"
+    "switch to single theme": "切换为单一主题",
+    "30 sec": "30 秒",
+    "1 min": "1 分钟",
+    "2 min": "2 分钟",
+    "5 min": "5 分钟",
+    "disabled": "已禁用"
   }
 }

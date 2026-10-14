@@ -472,7 +472,8 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
         const out = translateLine(dict, line, width, visibleWidth, truncateToWidth);
         if (out === line) {
           const text = analyzeLine(line).plain.trim();
-          if (text && untranslated.size < 80 && !untranslated.has(text)) {
+          // 只记录“还没中文且含英文字母”的候选行，作为补词典的清单（已汉化/纯装饰行不入日志）。
+          if (text && /[A-Za-z]/.test(text) && !/[\u3400-\u9fff\u3040-\u30ff]/.test(text) && untranslated.size < 200 && !untranslated.has(text)) {
             untranslated.add(text);
             log(`[未译] ${JSON.stringify(text)}`);
           }
@@ -599,9 +600,13 @@ function translateLine(
     const zh = lookupLabel(dict, row[2]);
     if (zh) {
       const start = row[1].length;
-      const end = start + row[2].length;
+      const end = start + row[2].length + row[3].length + row[4].length;
       const marker = splitMarker(row[2]).marker;
-      return truncate(splicePlain(line, map, start, end, padTo(marker + zh, vw(row[2]), vw)), width);
+      // 值列（值词典命中时）同步汉化，并按原宽度补空格，保证后续列不错位。
+      const valueMatch = /^(\S+)(\s*)$/.exec(row[4]);
+      const zhValue = valueMatch ? lookupValue(dict, valueMatch[1]) : undefined;
+      const value = zhValue && valueMatch ? padTo(zhValue, vw(valueMatch[1]), vw) + valueMatch[2] : row[4];
+      return truncate(splicePlain(line, map, start, end, padTo(marker + zh, vw(row[2]), vw) + row[3] + value), width);
     }
   }
   return line;
