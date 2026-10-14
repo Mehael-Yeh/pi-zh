@@ -44,6 +44,8 @@ export interface UiZhResult {
   chunks: string[];
   patched: string[];
   missing: string[];
+  /** 补丁代码版本：与 ui-zh.ts 的 CODE_VERSION 不一致时，/reload 会重新安装补丁。 */
+  code: number;
 }
 
 const RENDER_FLAG = Symbol.for("pi.uiZh.renderPatched");
@@ -51,6 +53,10 @@ const THEME_FLAG = Symbol.for("pi.uiZh.themePatched");
 const ITEM_FLAG = Symbol.for("pi.uiZh.renderItemPatched");
 const HINT_FLAG = Symbol.for("pi.uiZh.hintPatched");
 const INSTALL_FLAG = Symbol.for("pi.uiZh.installed");
+const DICT_FLAG = Symbol.for("pi.uiZh.dict");
+// 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
+// /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
+const CODE_VERSION = 2;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
@@ -415,16 +421,29 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     getDebugLog()(message);
     options.log?.(message);
   };
-  const dict: UiDictionary = options.dictionary ?? loadDictionary();
   const globals = globalThis as Record<string | symbol, any>;
+  const loadedDict: UiDictionary = options.dictionary ?? loadDictionary();
+  // /reload 会重新加载扩展模块但保留同一进程：把词典挂到 globalThis 上，
+  // 已安装的补丁闭包通过代理读取最新词典，所以改完词典 /reload 即可生效。
+  globals[DICT_FLAG] = loadedDict;
+  const dict: UiDictionary = new Proxy({} as UiDictionary, {
+    get: (_target, prop) => (globals[DICT_FLAG] as any)?.[prop],
+    has: (_target, prop) => prop in ((globals[DICT_FLAG] as any) ?? {}),
+  });
+  const size = (value: unknown): number =>
+    Array.isArray(value) ? value.length : value && typeof value === "object" ? Object.keys(value).length : 0;
+  log(
+    `[dict] labels=${size(loadedDict.labels)} descriptions=${size(loadedDict.descriptions)} texts=${size(loadedDict.texts)} ` +
+      `patterns=${size(loadedDict.patterns)} values=${size(loadedDict.values)}`,
+  );
   // 注意：/reload 会在同一进程里重新加载扩展，而 globalThis 会保留。
   // 若上次安装是 0 处补丁（例如旧版本残留），必须重新安装而不是直接返回缓存。
   const cached = globals[INSTALL_FLAG] as UiZhResult | undefined;
-  if (cached && cached.patched.length > 0) {
-    log("界面汉化已安装过，跳过");
+  if (cached && cached.patched.length > 0 && cached.code === CODE_VERSION) {
+    log("界面汉化已安装过，跳过（词典已更新）");
     return { ...cached };
   }
-  if (cached) log("上次安装未生效（0 处补丁），重新安装");
+  if (cached) log(cached.patched.length === 0 ? "上次安装未生效（0 处补丁），重新安装" : "补丁代码已更新，重新安装");
 
   const piRoot = options.piRoot ?? resolvePiRoot() ?? null;
   if (!piRoot) throw new Error("找不到正在运行的 pi 安装目录（dist/bundle/chunks）");
@@ -611,7 +630,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     log("[chrome] 未取到 Editor 类，跳过兜底汉化（/trust、/config 等仍为英文）");
   }
 
-  const result: UiZhResult = { piRoot, chunks, patched, missing };
+  const result: UiZhResult = { piRoot, chunks, patched, missing, code: CODE_VERSION };
   globals[INSTALL_FLAG] = result;
   if (patched.length === 0) {
     log(`[FAIL] 没有安装任何补丁；缺失类：${missing.join(", ") || "（无）"}`);
