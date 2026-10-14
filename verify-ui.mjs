@@ -186,6 +186,93 @@ if (chromeProbe.error) {
 
 check(hasZh(after.auth), "认证方式选择已中文化", after.auth.filter((l) => l.trim()).join("；"));
 
+/* ---------------------------------------------------- 屏幕样例文案自测 ---- */
+// 取各屏幕源码里的代表性文案，走兜底（编辑器容器）通道渲染，确认词典确实覆盖。
+const SAMPLE_LINES = [
+  // /model
+  "Refreshing model catalogs…",
+  "Only showing models from configured providers. Use /login to add providers.",
+  "Model refresh timed out; showing cached models.",
+  "  No matching models",
+  "  Model Name: gpt-5",
+  "  enter to select · ctrl+s to set as default · esc to cancel",
+  // /scoped-models
+  "Model Configuration",
+  "  Session-only. ctrl+s to save to settings.",
+  "  12/34 enabled",
+  // /login、OAuth
+  "  Select provider to configure:",
+  "  ✓ configured",
+  "  • not configured",
+  "  env: ANTHROPIC_API_KEY",
+  "  No providers logged in. Use /login first.",
+  "Login to Anthropic",
+  "  Enter code: ABCD-1234",
+  "  (esc to cancel)",
+  "  (esc to cancel, enter to submit)",
+  "Ctrl+click to open",
+  "Login cancelled",
+  // /trust
+  "Project trust",
+  "  Saved decision: none",
+  "  Current session: untrusted",
+  "  Ask (inherited from ~/.pi/agent/settings.json)",
+  // /sessions
+  "Resume Session (Current Folder)",
+  "◉ Current Folder | ○ All   Name: default   Sort: recent",
+  "  No sessions found",
+  "  No named sessions found. Press tab to show all.",
+  "  No sessions in current folder. Press Tab to view all.",
+  "  Delete session? enter confirm · esc cancel",
+  "  Failed to load sessions: boom",
+  "  Session moved to trash",
+  "Rename Session",
+  "  12 messages",
+  // /tree
+  "Session Tree",
+  "  Type to search: abc",
+  "  [no-tools] hello",
+  "  user: hello",
+  "  assistant: hi",
+  "  (aborted)",
+  "  Label (empty to remove):",
+  "  No entries found",
+  // 用户消息选择器
+  "Fork from Message",
+  "Select a user message to copy the active path up to that point into a new session",
+  "  Message 2 of 9",
+  "  No user messages found",
+  // 其它
+  "Thinking Level",
+  "  (auto)",
+  "  thinking off",
+  "  (all/scoped)",
+];
+const sampleProbe = (() => {
+  try {
+    const editor = Object.create(names.Editor.prototype);
+    const editorContainer = new names.Container();
+    editorContainer.addChild(editor);
+    const screen = new names.Container();
+    for (const line of SAMPLE_LINES) screen.addChild(new names.Text(line, 0, 0));
+    editorContainer.addChild(screen);
+    return { lines: screen.render(WIDTH).map(strip) };
+  } catch (error) {
+    return { error: String(error) };
+  }
+})();
+if (sampleProbe.error) {
+  check(false, "屏幕样例渲染可运行", sampleProbe.error);
+} else {
+  const untranslated = sampleProbe.lines.map((l) => l.trim()).filter((l) => l && !/[\u4e00-\u9fff]/.test(l));
+  check(
+    untranslated.length === 0,
+    `屏幕样例文案全部汉化（${SAMPLE_LINES.length} 条）`,
+    untranslated.slice(0, 12).map((l) => JSON.stringify(l)).join("；"),
+  );
+  if (process.argv.includes("--dump")) dump("屏幕样例（汉化后）", sampleProbe.lines);
+}
+
 /* ---------------------------------------------------- 词典自身一致性 / 漂移 ---- */
 
 const sections = ["labels", "descriptions", "texts", "values"];

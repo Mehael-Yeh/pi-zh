@@ -116,7 +116,10 @@
     "Select authentication method:": "选择认证方式：",
     "Sign in with an account": "使用账号登录",
     "Sign in with an API key": "使用 API 密钥登录",
-    "Sign in with Radius": "使用 Radius 登录"
+    "Sign in with Radius": "使用 Radius 登录",
+    "(current)": "（当前）",
+    "user:": "用户：",
+    "assistant:": "助手："
   },
   "descriptions": {
     "Warn when Anthropic subscription auth may use paid extra usage": "当 Anthropic 订阅认证可能使用付费额外用量时发出警告",
@@ -224,9 +227,102 @@
     "Select authentication method:": "选择认证方式：",
     "Sign in with an account": "使用账号登录",
     "Sign in with an API key": "使用 API 密钥登录",
-    "Sign in with Radius": "使用 Radius 登录"
+    "Sign in with Radius": "使用 Radius 登录",
+    "No matching models": "没有匹配的模型",
+    "No providers available": "没有可用的服务商",
+    "No matching providers": "没有匹配的服务商",
+    "no providers": "无服务商",
+    "Model Configuration": "模型配置",
+    "all enabled": "全部启用",
+    "Model unavailable": "模型不可用",
+    "Select provider to configure:": "选择要配置的服务商：",
+    "Select provider to logout:": "选择要退出的服务商：",
+    "Project trust": "项目信任",
+    "Fork from Message": "从消息分叉",
+    "No user messages found": "没有找到用户消息",
+    "Session Tree": "会话树",
+    "Type to search:": "输入即搜索：",
+    "Label (empty to remove):": "标签（留空即移除）：",
+    "No entries found": "没有条目",
+    "Resume Session (Current Folder)": "恢复会话（当前文件夹）",
+    "Resume Session (All)": "恢复会话（全部）",
+    "No sessions found": "没有找到会话",
+    "Rename Session": "重命名会话",
+    "Empty regex": "空正则",
+    "re:": "正则：",
+    "Theme": "主题",
+    "Cancel or abort": "取消或中止",
+    "Clear editor": "清空输入框",
+    "Exit when editor is empty": "输入框为空时退出",
+    "Suspend to background": "挂起到后台",
+    "Cycle thinking level": "循环切换思考级别",
+    "Save thinking level": "保存思考级别为默认",
+    "Cycle to next model": "切换到下一个模型",
+    "Cycle to previous model": "切换到上一个模型",
+    "Open model selector": "打开模型选择器",
+    "Toggle tool output": "折叠/展开工具输出",
+    "Toggle thinking blocks": "折叠/展开思考块",
+    "Toggle named session filter": "切换“仅已命名会话”过滤",
+    "Open external editor": "打开外部编辑器",
+    "Copy selection or last assistant message": "复制选中内容或最后一条助手消息",
+    "Queue follow-up message": "排队发送后续消息",
+    "Restore queued messages": "恢复排队的消息",
+    "Paste files on macOS, images, or text from clipboard": "粘贴文件（macOS）/ 图片 / 剪贴板文本",
+    "Start a new session": "新建会话",
+    "Open session tree": "打开会话树",
+    "Fork current session": "从当前会话分叉",
+    "Resume a session": "恢复会话",
+    "Fold tree branch or move up": "折叠树分支 / 上移",
+    "Unfold tree branch or move down": "展开树分支 / 下移",
+    "Edit tree label": "编辑树标签",
+    "Toggle tree label timestamps": "切换树标签时间显示",
+    "Toggle session path display": "切换会话路径显示",
+    "Toggle session sort mode": "切换会话排序方式",
+    "Rename session": "重命名会话",
+    "Delete session": "删除会话",
+    "Delete session when query is empty": "查询为空时删除会话",
+    "Save model selection": "保存模型选择",
+    "Enable all models": "启用全部模型",
+    "Clear all models": "清空全部模型",
+    "Toggle all models for provider": "切换某服务商的全部模型",
+    "Move model up in order": "模型排序上移",
+    "Move model down in order": "模型排序下移",
+    "Tree filter: default view": "会话树过滤：默认视图",
+    "Tree filter: hide tool results": "会话树过滤：隐藏工具结果",
+    "Tree filter: user messages only": "会话树过滤：仅用户消息",
+    "Tree filter: labeled entries only": "会话树过滤：仅有标签条目",
+    "Tree filter: show all entries": "会话树过滤：显示全部条目",
+    "Tree filter: cycle forward": "会话树过滤：向后循环",
+    "Tree filter: cycle backward": "会话树过滤：向前循环",
+    "Project Local Resources": "项目本地资源",
+    "Global Resources": "全局资源",
+    "Built-in (project override)": "内置（项目覆盖）",
+    "User settings": "用户设置",
+    "Project settings": "项目设置",
+    "No resources found": "没有找到资源",
+    "switch mode": "切换模式",
+    "cycle inherit/+/-": "循环：继承 / + / -",
+    "project load": "项目加载",
+    "project unload": "项目卸载",
+    "inherited global": "继承的全局"
   },
   "patterns": [
+    [
+      "^([○◉] Current Folder \\| [○◉] All)\\s+Name: (.*?)\\s+Sort: (.*)$",
+      "$1  名称：$2  排序：$3"
+    ],
+    [
+      "^Scope: all \\| scoped$",
+      "范围：全部 | 已限定"
+    ],
+    [
+      "^Scope: all$",
+      "范围：全部"
+    ],
+    [
+      "^Scope: scoped$",
+      "范围：已限定"
+    ],
     [
       "^\\s*(.*?)\\s*cycles thinking levels in-session\\s*$",
       "$1在会话内循环切换思考级别"
@@ -534,6 +630,162 @@
     [
       "^↑↓ navigate  (.*) select  (.*) cancel$",
       "↑↓ 移动  $1 选择  $2 取消"
+    ],
+    [
+      "(.*) to select · (.*) to set as default · (.*) to cancel$",
+      "$1 选择 · $2 设为默认 · $3 取消"
+    ],
+    [
+      "^(.*) · default$",
+      "$1 · 默认"
+    ],
+    [
+      "^\\((.*) to cancel, (.*) to submit\\)$",
+      "（$1 取消，$2 提交）"
+    ],
+    [
+      "^\\((.*) to close\\)$",
+      "（$1 关闭）"
+    ],
+    [
+      "(\\S+)/(\\S+) enabled",
+      "$1/$2 已启用"
+    ],
+    [
+      "  toggle  ",
+      " 切换 "
+    ],
+    [
+      "  all  ",
+      " 全部 "
+    ],
+    [
+      "  clear  ",
+      " 清空 "
+    ],
+    [
+      "  provider  ",
+      " 服务商 "
+    ],
+    [
+      "  reorder  ",
+      " 排序 "
+    ],
+    [
+      "  save",
+      " 保存"
+    ],
+    [
+      "◉ Current Folder \\| ○ All",
+      "◉ 当前目录 | ○ 全部"
+    ],
+    [
+      "○ Current Folder \\| ◉ All",
+      "○ 当前目录 | ◉ 全部"
+    ],
+    [
+      "^Sort: ",
+      "排序："
+    ],
+    [
+      "^Name: ",
+      "名称："
+    ],
+    [
+      "^No named sessions found\\. Press (.*) to show all\\.$",
+      "没有找到已命名的会话。按 $1 显示全部。"
+    ],
+    [
+      "^No named sessions in current folder\\. Press (.*) to show all, or Tab to view all\\.$",
+      "当前文件夹没有已命名的会话。按 $1 显示全部，或按 Tab 查看全部。"
+    ],
+    [
+      "^No sessions in current folder\\. Press Tab to view all\\.$",
+      "当前文件夹没有会话。按 Tab 查看全部。"
+    ],
+    [
+      "^Delete session\\? (.*) confirm · (.*) cancel$",
+      "删除会话？$1 确认 · $2 取消"
+    ],
+    [
+      "^(.*) to save · (.*) to cancel$",
+      "$1 保存 · $2 取消"
+    ],
+    [
+      "(\\d+) messages?$",
+      "$1 条消息"
+    ],
+    [
+      "\\[compaction: (.*)k tokens\\]",
+      "[压缩：$1k tokens]"
+    ],
+    [
+      "\\(cleared\\)",
+      "（已清除）"
+    ],
+    [
+      "(.*) \\(inherited from (.*)\\)$",
+      "$1（继承自 $2）"
+    ],
+    [
+      "^Message (.*) of (.*)$",
+      "第 $1 条消息（共 $2 条）"
+    ],
+    [
+      "thinking off",
+      "思考：关闭"
+    ],
+    [
+      "\\(auto\\)",
+      "（自动）"
+    ],
+    [
+      "\\(all/scoped\\)",
+      "（全部/已限定）"
+    ],
+    [
+      "^Select a theme, or choose automatic to follow terminal appearance\\.$",
+      "选择主题，或选择 automatic 跟随终端外观。"
+    ],
+    [
+      "^Choose themes for terminal light and dark appearance\\.$",
+      "为终端浅色/深色外观选择主题。"
+    ],
+    [
+      "^Light/dark detection requires terminal support\\.$",
+      "浅色/深色检测需要终端支持。"
+    ],
+    [
+      "^Automatic Theme$",
+      "自动主题"
+    ],
+    [
+      " ✓ configured",
+      " ✓ 已配置"
+    ],
+    [
+      " • not configured",
+      " • 未配置"
+    ],
+    [
+      "^\\(aborted\\)$",
+      "（已中止）"
+    ],
+    [
+      "^\\(no content\\)$",
+      "（无内容）"
+    ],
+    [
+      "stored credential",
+      "已保存的凭据"
+    ],
+    [
+      "^(.+) · inherited global$",
+      "$1 · 继承的全局"
+    ],
+    [
+      "^(.*) · inherited global resources are dimmed$",
+      "$1 · 继承的全局资源以暗色显示"
     ]
   ],
   "values": {
