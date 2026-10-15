@@ -941,5 +941,17 @@
   },
   "chromeTitles": {
     "Keyboard Shortcuts": "键盘快捷键"
+  },
+  "extensionTexts": {
+    "_comment": "第三方扩展用 pi.registerShortcut(key, { description }) 注册的文案，出现在 /hotkeys 的“扩展”小节。这些字串不在 Pi 源码里（无漂移检查）；换机器/换扩展时按需调整或删除。",
+    "Inspect acp_delegate runs (live list + transcript)": "查看 acp_delegate 运行情况（实时列表 + 会话记录）",
+    "Review search results": "查看搜索结果",
+    "Toggle web search activity": "切换网页搜索活动面板",
+    "Toggle BTW overlay focus while leaving it open.": "切换 BTW 浮层的焦点（保持打开）",
+    "Toggle the BTW overlay between window and full-width layouts.": "在窗口或全宽布局之间切换 BTW 浮层",
+    "Open focused background task footer dock": "打开已聚焦的后台任务页脚停靠栏",
+    "Clear finished background task footer notices (terminal-dependent fallback for /bg-clear)": "清除已完成的后台任务页脚提示（终端不支持时的 /bg-clear 替代）",
+    "Collapse or expand the todo overlay": "折叠或展开待办浮层",
+    "Detach the active foreground subagent and keep it running in the background": "把前台子代理分离到后台继续运行"
   }
 }

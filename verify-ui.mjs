@@ -74,12 +74,18 @@ const cfg = {
 };
 const callbacks = new Proxy({}, { get: () => noop });
 
+const EXT_ACTION = "Toggle web search activity";
 const HOTKEYS_MD = [
   "**Navigation**",
   "| Key | Action |",
   "|-----|--------|",
   "| `↑` / `↓` | Move cursor / browse history |",
   "| `←` / `→` | Move by word |",
+  "",
+  "**Extensions**",
+  "| Key | Action |",
+  "|-----|--------|",
+  "| `Ctrl+Shift+W` | " + EXT_ACTION + " |",
 ].join("\n");
 const PLAIN_MD = [
   "**Navigation**",
@@ -206,14 +212,29 @@ check(hasZh(after.auth), "认证方式选择已中文化", after.auth.filter((l)
 
 /* ------------------------------------------- /hotkeys 画框表格（聊天区输出） ---- */
 check(after.hotkeys.some((l) => l.includes("按键") && l.includes("操作")), "hotkeys 表头已中文化", after.hotkeys.join("；"));
+check(after.hotkeys.some((l) => l.includes("切换网页搜索活动面板")), "hotkeys 扩展小节（第三方说明）已中文化", after.hotkeys.join("；"));
 check(after.hotkeys.some((l) => l.includes("移动光标 / 浏览历史")), "hotkeys 动作说明已中文化");
 check(after.hotkeys.some((l) => l.includes("按键") || l.includes("导航")), "hotkeys 小节/表头已中文化");
 check(after.hotkeys.some((l) => l.trim() === "导航"), "hotkeys 小节标题已中文化");
 check(after.hotkeys.some((l) => l.includes("↑ / ↓")), "hotkeys 键名列保持原文");
-const tableWidths = new Set(
-  after.hotkeys.filter((l) => /[│┌├└]/.test(l)).map((l) => vw(l.trimEnd())),
+// 每张表格（连续边框行）内部宽度必须一致；多张表之间可以不同。
+const groups = [];
+let current = null;
+for (const line of after.hotkeys) {
+  if (/[│┌├└]/.test(line)) {
+    (current ??= []).push(vw(line.trimEnd()));
+  } else if (current) {
+    groups.push(current);
+    current = null;
+  }
+}
+if (current) groups.push(current);
+const badGroups = groups.filter((widths) => new Set(widths).size > 1);
+check(
+  groups.length > 0 && badGroups.length === 0,
+  "hotkeys 表格边框未错位",
+  badGroups.map((widths) => widths.join(", ")).join(" | "),
 );
-check(tableWidths.size === 1, "hotkeys 表格边框未错位", [...tableWidths].join(", "));
 check(!hasZh(after.plainMarkdown), "普通 Markdown（模型回复）不被翻译", after.plainMarkdown.filter((l) => l.trim()).join("；"));
 const titleText = strip(String(names.theme.fg("accent", "Keyboard Shortcuts")));
 check(titleText.includes("键盘快捷键"), "聊天区标题（Keyboard Shortcuts）已中文化", titleText);
@@ -307,7 +328,7 @@ if (sampleProbe.error) {
 
 /* ---------------------------------------------------- 词典自身一致性 / 漂移 ---- */
 
-const sections = ["labels", "descriptions", "texts", "values"];
+const sections = ["labels", "descriptions", "texts", "values", "chromeTitles", "extensionTexts"];
 const empty = [];
 for (const section of sections) {
   for (const [k, v] of Object.entries(dict[section] ?? {})) {

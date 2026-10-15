@@ -24,6 +24,11 @@ export interface UiDictionary {
   /** 列表项说明：只用于追加「中文：…」行与 SelectList 行内说明，不会就地替换英文原文。 */
   descriptions?: Record<string, string>;
   texts?: Record<string, string>;
+  /**
+   * 第三方扩展自己注册的文案（如 `/hotkeys` 里“扩展”小节的快捷键说明）。
+   * 这些字串不在 Pi 源码里，无法做漂移检查，因此单独成段维护。
+   */
+  extensionTexts?: Record<string, string>;
   /** 聊天区极少数界面标题（如 /hotkeys 的 “Keyboard Shortcuts”）：按原文精确匹配，只用于全局主题包装。 */
   chromeTitles?: Record<string, string>;
   values?: Record<string, string>;
@@ -58,7 +63,7 @@ const INSTALL_FLAG = Symbol.for("pi.uiZh.installed");
 const DICT_FLAG = Symbol.for("pi.uiZh.dict");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 3;
+const CODE_VERSION = 4;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
@@ -103,6 +108,7 @@ function getDebugLog(): (message: string) => void {
 
 const lookupLabel = (d: UiDictionary, text: string): string | undefined => d.labels?.[splitMarker(text.trim()).body];
 const lookupText = (d: UiDictionary, text: string): string | undefined => d.texts?.[text.trim()];
+const lookupExtensionText = (d: UiDictionary, text: string): string | undefined => d.extensionTexts?.[text.trim()];
 const lookupValue = (d: UiDictionary, text: string): string | undefined => d.values?.[text.trim()];
 
 /** 选中标记（✓ 等）不属于文案本身，查词典时剥掉、替换后原样补回。 */
@@ -727,7 +733,7 @@ function translateLine(
   if (!trimmed) return line;
 
   // 整行匹配先查 texts，再退到 labels（同一个键可能既是列表标签又是独立标题行，例如 “Project trust”）。
-  const whole = lookupText(dict, trimmed) ?? lookupLabel(dict, trimmed);
+  const whole = lookupText(dict, trimmed) ?? lookupLabel(dict, trimmed) ?? lookupExtensionText(dict, trimmed);
   if (whole) {
     const start = plain.length - plain.trimStart().length;
     const end = plain.trimEnd().length;
@@ -798,7 +804,7 @@ function translateTableRow(
     const cell = cells[i];
     const body = cell.text.trim();
     if (!body) continue;
-    const zh = lookupText(dict, body) ?? lookupLabel(dict, body);
+    const zh = lookupText(dict, body) ?? lookupLabel(dict, body) ?? lookupExtensionText(dict, body);
     if (!zh) continue;
     const cellWidth = vw(cell.text);
     const zhText = truncate(zh, Math.max(1, cellWidth - 1), "");
