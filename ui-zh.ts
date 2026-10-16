@@ -29,6 +29,13 @@ export interface UiDictionary {
    * 这些字串不在 Pi 源码里，无法做漂移检查，因此单独成段维护。
    */
   extensionTexts?: Record<string, string>;
+  /**
+   * 多行段落（会被终端按宽度折行的说明文字，如 /bug 的隐私声明）：
+   * 引擎把连续非空行按空格拼回整段后查这张表，命中则按原缩进与宽度重新折行。
+   */
+  paragraphs?: Record<string, string>;
+  /** 含动态内容的多行段落：正则 → 替换文本（$1 等可用），与 paragraphs 同一匹配流程。 */
+  paragraphPatterns?: [string, string][];
   /** 聊天区极少数界面标题（如 /hotkeys 的 “Keyboard Shortcuts”）：按原文精确匹配，只用于全局主题包装。 */
   chromeTitles?: Record<string, string>;
   values?: Record<string, string>;
@@ -63,7 +70,7 @@ const INSTALL_FLAG = Symbol.for("pi.uiZh.installed");
 const DICT_FLAG = Symbol.for("pi.uiZh.dict");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 4;
+const CODE_VERSION = 5;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
@@ -442,7 +449,8 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     Array.isArray(value) ? value.length : value && typeof value === "object" ? Object.keys(value).length : 0;
   log(
     `[dict] labels=${size(loadedDict.labels)} descriptions=${size(loadedDict.descriptions)} texts=${size(loadedDict.texts)} ` +
-      `patterns=${size(loadedDict.patterns)} values=${size(loadedDict.values)}`,
+      `patterns=${size(loadedDict.patterns)} values=${size(loadedDict.values)} ` +
+      `extensionTexts=${size(loadedDict.extensionTexts)} chromeTitles=${size(loadedDict.chromeTitles)} paragraphs=${size(loadedDict.paragraphs)}`,
   );
   // 注意：/reload 会在同一进程里重新加载扩展，而 globalThis 会保留。
   // 若上次安装是 0 处补丁（例如旧版本残留），必须重新安装而不是直接返回缓存。
@@ -465,7 +473,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     "ThinkingSelectorComponent", "LoginDialogComponent", "ModelSelectorComponent",
     "SessionSelectorComponent", "TreeSelectorComponent", "OAuthSelectorComponent",
     "ExtensionSelectorComponent", "UserMessageSelectorComponent",
-    "visibleWidth", "truncateToWidth",
+    "visibleWidth", "truncateToWidth", "wrapTextWithAnsi",
   ];
   const { candidates, chunks } = await collectCandidates(piRoot, wanted, log);
   const missing = wanted.filter((name) => !(candidates[name]?.length));
@@ -476,6 +484,21 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
   };
   const visibleWidth: (s: string) => number = metric("visibleWidth", (s: string) => s.length);
   const truncateToWidth: (s: string, w: number, ellipsis?: string) => string = metric("truncateToWidth", (s: string, w: number) => s.slice(0, w));
+  /** 折行用（多行段落汉化后按同样宽度重新折行）。 */
+  const wrapText: (s: string, w: number) => string[] = metric("wrapTextWithAnsi", (s: string, w: number) => {
+    const out: string[] = [];
+    let rest = s;
+    while (visibleWidth(rest) > w) {
+      let cut = rest.length;
+      while (cut > 1 && visibleWidth(rest.slice(0, cut)) > w) cut -= 1;
+      const space = rest.lastIndexOf(" ", cut);
+      if (space > 0) cut = space;
+      out.push(rest.slice(0, cut));
+      rest = rest.slice(cut).replace(/^\s+/, "");
+    }
+    if (rest) out.push(rest);
+    return out.length ? out : [s];
+  });
 
   const patched: string[] = [];
   const done = new Set<any>();
@@ -495,6 +518,61 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     }
   };
 
+  /**
+   * 多行段落：终端折行位置随宽度变化，逐行匹配不可能命中，因此先把连续非空行按空格拼回整段，
+   * 再查 `paragraphs`（精确）或 `paragraphPatterns`（正则，支持 $1 等动态部分）；命中后按原缩进与宽度重新折行。
+   */
+  const translateBlocks = (dictionary: UiDictionary, lines: string[], width: number): string[] => {
+    const hasBlocks =
+      !!(dictionary.paragraphs && Object.keys(dictionary.paragraphs).length) || !!(dictionary.paragraphPatterns?.length);
+    if (!hasBlocks) return lines;
+    const blockPatterns = dictionary.paragraphPatterns ?? [];
+    const out: string[] = [];
+    for (let i = 0; i < lines.length; i += 1) {
+      const raw = analyzeLine(lines[i]).plain;
+      const first = raw.trim();
+      if (first) {
+        let joined = first;
+        let end = i;
+        let hit: string | undefined;
+        for (let j = i; j < lines.length && j < i + 8; j += 1) {
+          if (j > i) {
+            const next = analyzeLine(lines[j]).plain.trim();
+            if (!next) break;
+            joined = `${joined} ${next}`;
+          }
+          const exact = dictionary.paragraphs?.[joined];
+          if (exact) {
+            hit = exact;
+            end = j;
+            break;
+          }
+          for (const [source, replacement] of blockPatterns) {
+            try {
+              const re = new RegExp(source);
+              if (re.test(joined)) {
+                hit = joined.replace(re, replacement);
+                end = j;
+                break;
+              }
+            } catch {
+              // 词典正则写错时跳过这条
+            }
+          }
+          if (hit) break;
+        }
+        if (hit) {
+          const indent = raw.slice(0, raw.length - raw.trimStart().length);
+          for (const piece of wrapText(hit, Math.max(1, width - visibleWidth(indent)))) out.push(indent + piece);
+          i = end;
+          continue;
+        }
+      }
+      out.push(lines[i]);
+    }
+    return out;
+  };
+
   const renderedOnce = new Set<string>();
   const untranslated = new Set<string>();
   /** 逐行翻译 + 首次渲染/未译行诊断（未译行清单用于补词典）。 */
@@ -504,7 +582,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
       log(`[render] ${label} 首次渲染 ${lines.length} 行，前 6 行原文：`);
       for (const line of lines.slice(0, 6)) log(`    ${JSON.stringify(analyzeLine(line).plain)}`);
     }
-    return lines.map((line) => {
+    return translateBlocks(dict, lines, width).map((line) => {
       try {
         const out = translateLine(dict, line, width, visibleWidth, truncateToWidth);
         if (out === line) {
@@ -651,9 +729,19 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
         }
       }
       if (!isHotkeys) return lines;
+      let misses = 0;
       return lines.map((line) => {
         const table = translateTableRow(dict, line, visibleWidth, truncateToWidth);
-        return table !== line ? table : translateLine(dict, line, width, visibleWidth, truncateToWidth);
+        const out = table !== line ? table : translateLine(dict, line, width, visibleWidth, truncateToWidth);
+        // 诊断：把仍未汉化的表格行原文记进日志（最多 5 行），便于定位漏掉的文案。
+        if (out === line && misses < 5) {
+          const plain = analyzeLine(line).plain;
+          if (plain.includes("│") && /[A-Za-z]/.test(plain)) {
+            misses += 1;
+            log(`[table-miss] ${JSON.stringify(plain.trim())}`);
+          }
+        }
+        return out;
       });
     }),
   );

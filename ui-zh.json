@@ -194,7 +194,7 @@
     "Enter to select · Esc to go back": "回车选择 · Esc 返回",
     "No matching commands": "没有匹配的命令",
     "Refreshing model catalogs…": "正在刷新模型目录…",
-    "Only showing models from configured providers. Use /login to add providers.": "只显示已配置供应商的模型。用 /login 添加供应商。",
+    "Only showing models from configured providers. Use /login to add providers.": "只显示已配置提供方的模型。用 /login 添加提供方。",
     "Model refresh timed out; showing cached models.": "刷新模型目录超时；显示缓存中的模型。",
     "Model catalogs refreshed.": "模型目录已刷新。",
     "(all/scoped)": "（全部/范围内）",
@@ -352,7 +352,10 @@
     "Edit message in external editor": "用外部编辑器编辑消息",
     "Slash commands": "斜杠命令",
     "Run bash command": "运行 bash 命令",
-    "Run bash command (excluded from context)": "运行 bash 命令（不计入上下文）"
+    "Run bash command (excluded from context)": "运行 bash 命令（不计入上下文）",
+    "What went wrong? (optional)": "哪里出了错？（可留空）",
+    "Cancel": "取消",
+    "tab scope · re:<pattern> regex · \"phrase\" exact": "Tab 切换范围 · re:正则 正则匹配 · \"短语\" 精确匹配"
   },
   "patterns": [
     [
@@ -894,6 +897,42 @@
     [
       "^(.*) · inherited global resources are dimmed$",
       "$1 · 继承的全局资源以暗色显示"
+    ],
+    [
+      "^Description: none$",
+      "说明：无"
+    ],
+    [
+      "^Summary: none$",
+      "摘要：无"
+    ],
+    [
+      "^Transcript: included$",
+      "会话记录：包含"
+    ],
+    [
+      "^Transcript: not included$",
+      "会话记录：不包含"
+    ],
+    [
+      "^Description: (.*)$",
+      "说明：$1"
+    ],
+    [
+      "^Transcript: (.*)$",
+      "会话记录：$1"
+    ],
+    [
+      "^Summary: (.*)$",
+      "摘要：$1"
+    ],
+    [
+      "^Resume Session \\((.*)\\)$",
+      "恢复会话（$1）"
+    ],
+    [
+      "^ctrl\\+s sort · ctrl\\+n named · ctrl\\+d delete · ctrl\\+p path \\((on|off)\\) · ctrl\\+r rename$",
+      "Ctrl+S 排序 · Ctrl+N 命名 · Ctrl+D 删除 · Ctrl+P 路径（$1） · Ctrl+R 重命名"
     ]
   ],
   "values": {
@@ -953,5 +992,14 @@
     "Clear finished background task footer notices (terminal-dependent fallback for /bg-clear)": "清除已完成的后台任务页脚提示（终端不支持时的 /bg-clear 替代）",
     "Collapse or expand the todo overlay": "折叠或展开待办浮层",
     "Detach the active foreground subagent and keep it running in the background": "把前台子代理分离到后台继续运行"
-  }
+  },
+  "paragraphs": {
+    "This report goes to the Pi developers (Earendil) and is not shared publicly. It includes your pi version, operating system, the current model and provider configuration (without API keys), loaded extensions, settings, and provider error diagnostics from this session.": "这份报告会发送给 Pi 开发者（Earendil），不会公开分享。报告包含你的 Pi 版本、操作系统、当前模型与提供方配置（不含 API 密钥）、已加载的扩展、设置，以及本次会话的提供方错误诊断信息。"
+  },
+  "paragraphPatterns": [
+    [
+      "^Upload sends the report to (\\S+)\\. Export writes a zip archive to the current directory instead\\.$",
+      "上传会把报告发送到 $1；导出则改为在当前目录写入 zip 压缩包。"
+    ]
+  ]
 }

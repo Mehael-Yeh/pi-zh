@@ -210,6 +210,36 @@ if (chromeProbe.error) {
 
 check(hasZh(after.auth), "认证方式选择已中文化", after.auth.filter((l) => l.trim()).join("；"));
 
+/* ------------------------------- 多行段落（/bug 隐私声明这类按宽度折行的说明） ---- */
+// 说明文字会被终端按宽度折行，逐行匹配不可能命中，因此引擎把连续非空行拼回整段再查词典。
+const BUG_DISCLAIMER =
+  "This report goes to the Pi developers (Earendil) and is not shared publicly. It includes your pi version, " +
+  "operating system, the current model and provider configuration (without API keys), loaded extensions, settings, " +
+  "and provider error diagnostics from this session.";
+const blockProbe = (() => {
+  try {
+    const editor = Object.create(names.Editor.prototype);
+    const editorContainer = new names.Container();
+    editorContainer.addChild(editor);
+    const chromeChild = new names.Container();
+    chromeChild.addChild(new names.Text(`${BUG_DISCLAIMER}\n\nWhat went wrong? (optional)`, 1, 0));
+    chromeChild.addChild(new names.Text("Description: none\nTranscript: not included\nSummary: none", 1, 0));
+    editorContainer.addChild(chromeChild);
+    return { lines: chromeChild.render(WIDTH).map(strip) };
+  } catch (error) {
+    return { error: String(error) };
+  }
+})();
+if (blockProbe.error) {
+  check(false, "多行段落探针可运行", blockProbe.error);
+} else {
+  const joined = blockProbe.lines.join("\n");
+  check(hasZh(blockProbe.lines), "多行段落（/bug 隐私声明）已中文化", blockProbe.lines.filter((l) => l.trim()).join("；"));
+  check(!joined.includes("is not shared publicly"), "隐私声明英文原文已被整段替换", joined.includes("is not shared publicly") ? "仍含英文原文" : "ok");
+  check(joined.includes("哪里出了错？"), "整行文案（What went wrong?）已中文化");
+  check(joined.includes("说明：无") && joined.includes("会话记录：不包含"), "Description:/Transcript: 模板行已中文化");
+}
+
 /* ------------------------------------------- /hotkeys 画框表格（聊天区输出） ---- */
 check(after.hotkeys.some((l) => l.includes("按键") && l.includes("操作")), "hotkeys 表头已中文化", after.hotkeys.join("；"));
 check(after.hotkeys.some((l) => l.includes("切换网页搜索活动面板")), "hotkeys 扩展小节（第三方说明）已中文化", after.hotkeys.join("；"));
@@ -328,7 +358,7 @@ if (sampleProbe.error) {
 
 /* ---------------------------------------------------- 词典自身一致性 / 漂移 ---- */
 
-const sections = ["labels", "descriptions", "texts", "values", "chromeTitles", "extensionTexts"];
+const sections = ["labels", "descriptions", "texts", "values", "chromeTitles", "extensionTexts", "paragraphs"];
 const empty = [];
 for (const section of sections) {
   for (const [k, v] of Object.entries(dict[section] ?? {})) {
@@ -351,6 +381,27 @@ for (const entry of dict.patterns ?? []) {
   }
 }
 check(badPatterns.length === 0, "patterns 正则均可编译", badPatterns.join("；"));
+
+// paragraphPatterns = 多行段落用的正则（先拼接再匹配），同样必须可编译且成对
+const badBlockPatterns = [];
+for (const entry of dict.paragraphPatterns ?? []) {
+  const [source, replacement] = entry;
+  if (typeof source !== "string" || typeof replacement !== "string") {
+    badBlockPatterns.push(`条目不是 [正则, 替换] 两元组：${JSON.stringify(entry)}`);
+    continue;
+  }
+  try {
+    new RegExp(source);
+  } catch (error) {
+    badBlockPatterns.push(`${source} → ${error.message}`);
+  }
+}
+check(badBlockPatterns.length === 0, "paragraphPatterns 正则均可编译", badBlockPatterns.join("；"));
+check(
+  dict.paragraphs && Object.keys(dict.paragraphs).length > 0,
+  "paragraphs 段存在（多行段落词典）",
+  String(Object.keys(dict.paragraphs ?? {}).length),
+);
 
 // 漂移检查：英文键仍需存在于 Pi 源码（pi-coding-agent + 同目录的 pi-tui）
 // piRoot = .../node_modules/@earendil-works/pi-coding-agent，因此 pi-tui 的兄弟包在
@@ -386,6 +437,8 @@ const RUNTIME_VERIFIED = new Set([
   "cycle ctrl+o/shift+ctrl+o",
   // /hotkeys 的 Windows 变体由模板拼接：`New line${platform === "win32" ? " (Ctrl+Enter on Windows Terminal)" : ""}`
   "New line (Ctrl+Enter on Windows Terminal)",
+  // 会话选择器的搜索提示由多段拼接（源码里搜不到），已在真实 pi 渲染日志里逐字见到。
+  'tab scope · re:<pattern> regex · "phrase" exact',
 ]);
 const drifted = { blocks: [], texts: [] };
 for (const section of ["labels", "descriptions", "texts"]) {

@@ -78,7 +78,7 @@ Pi 没有任何“界面翻译”扩展钩子，扩展加载器解析到的包�
 | --- | --- |
 | `index.ts` | 扩展入口：装配命令菜单汉化 + 界面汉化（各自独立容错） |
 | `ui-zh.ts` | 界面汉化引擎：探测安装目录、定位 chunk、安装渲染装饰器、逐行翻译 |
-| `ui-zh.json` | 界面词典：`labels` / `descriptions` / `texts` / `patterns` / `values` / `chromeTitles` / `extensionTexts` / `inline` |
+| `ui-zh.json` | 界面词典：`labels` / `descriptions` / `texts` / `patterns` / `values` / `paragraphs` / `paragraphPatterns` / `chromeTitles` / `extensionTexts` / `inline` |
 | `translations.json` | 命令菜单用户词典（键为不带 `/` 的命令名），优先于第三方词典 |
 | `third-party.ts` | 第三方 npm 包命令词典（含别名、条件命令、提示模板） |
 | `upgrade-baseline.json`、`baseline-archive/` | 第三方包审计基线（命令菜单部分） |
@@ -105,6 +105,8 @@ Pi 没有任何“界面翻译”扩展钩子，扩展加载器解析到的包�
 | `values` | 值列取值（`true`→`开`、`sse`→`SSE` 等） |
 | `chromeTitles` | 打印到聊天区的界面标题（如 `Keyboard Shortcuts`），按原文精确匹配，仅用于全局主题包装 |
 | `extensionTexts` | 第三方扩展注册的文案（`/hotkeys` 的“扩展”小节，如 `Toggle web search activity`）。这些字串不在 Pi 源码里，因此单独成段、**不做漂移检查**；换机器或换扩展时按需增删 |
+| `paragraphs` | **多行段落**（会被终端按宽度折行的说明文字，如 `/bug` 的隐私声明）。引擎把连续非空行按空格拼回整段再查表，命中后按原缩进与宽度重新折行——因此换终端宽度也能命中 |
+| `paragraphPatterns` | 含动态内容的多行段落：`[正则, 替换文本]`，在拼回整段后再匹配，`$1` 等可用（如“上传到 <主机>；导出则…”） |
 | `inline` | 单行说明格式：`en+zh`“英文 · 中文”（默认）、`zh`“只中文”、`zh+en`“中文 · 英文” |
 
 `verify-ui.mjs` 会检查词典键是否仍存在于 Pi 源码中（漂移检查）；Pi 升级后重跑即可发现需要更新的条目。
@@ -121,7 +123,7 @@ node "$HOME\.pi\agent\extensions\pi-zh\verify.mjs" "$HOME\.pi\agent\install\rele
 node "$HOME\.pi\agent\extensions\pi-zh\verify-ui.mjs" --strict
 ```
 
-`verify-ui.mjs` 覆盖：设置界面标签/值列对齐/英文说明保留/中文说明追加/提示行、`/theme`、`/thinking`、`/images`、认证屏幕的关键文案、`/hotkeys` 画框表格（表头/动作/小节/第三方扩展说明/边框对齐）与普通 Markdown 不受影响、聊天区标题、输出不超宽、重复安装幂等、编辑器容器兜底生效且容器外不翻译、词典无空键、`descriptions` 与 `texts` 不重叠、patterns 可编译、词典漂移检查。当前结果：42 通过 / 0 警告 / 0 失败。
+`verify-ui.mjs` 覆盖：设置界面标签/值列对齐/英文说明保留/中文说明追加/提示行、`/theme`、`/thinking`、`/images`、认证屏幕的关键文案、`/hotkeys` 画框表格（表头/动作/小节/第三方扩展说明/边框对齐）与普通 Markdown 不受影响、聊天区标题、多行段落（`/bug` 隐私声明按宽度折行后仍能整段汉化）、输出不超宽、重复安装幂等、编辑器容器兜底生效且容器外不翻译、词典无空键、`descriptions` 与 `texts` 不重叠、patterns/paragraphPatterns 可编译、词典漂移检查。当前结果：48 通过 / 0 警告 / 0 失败。
 
 运行中的诊断日志写在扩展目录下的 `ui-zh.log`（记录补丁命中的类、屏幕首次渲染的原文行、未译行清单；`PI_UI_ZH_LOG=0` 可关闭）。补词典时先看其中的 `[未译]` 行最省事。
 
@@ -150,6 +152,8 @@ git clone https://github.com/Mehael-Yeh/pi-zh.git pi-zh
 命令菜单部分占用自定义编辑器位置，不能保证与 Vim 编辑器等其他 `setEditorComponent` 扩展同时生效（通常后设置的编辑器覆盖前者）；界面汉化部分不占用编辑器。遇到冲突，应将补全包装逻辑整合到已有编辑器扩展。
 
 不翻译聊天记录、消息、工具说明和模型回复——只翻译界面“外壳”文案（`/hotkeys` 这类由命令打印的速查表属于界面输出，按画框表格签名识别后翻译）。不会自动翻译新安装扩展的任意说明。
+
+**已打印到终端的内容不会被追溯汉化**：常规模式下旧输出留在终端回滚缓冲区里，改完词典后必须重新执行命令（如再按一次 `/hotkeys`、再开一次 `/settings`）才能看到新的译文；只有选择器/对话框这类会重绘的界面会当场生效。
 
 ## 停用
 
