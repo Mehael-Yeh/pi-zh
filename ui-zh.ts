@@ -63,14 +63,22 @@ export interface UiZhResult {
 }
 
 const RENDER_FLAG = Symbol.for("pi.uiZh.renderPatched");
+const TRUE_RENDER_FLAG = Symbol.for("pi.uiZh.trueRender");
 const THEME_FLAG = Symbol.for("pi.uiZh.themePatched");
 const ITEM_FLAG = Symbol.for("pi.uiZh.renderItemPatched");
 const HINT_FLAG = Symbol.for("pi.uiZh.hintPatched");
 const INSTALL_FLAG = Symbol.for("pi.uiZh.installed");
 const DICT_FLAG = Symbol.for("pi.uiZh.dict");
+// 已安装的包裹统一从这些 globalThis 槽位取“当前实现”，所以 /reload 换成新代码后，
+// 老包裹（类原型上的旧闭包）会立刻用上新逻辑 —— 只改词典/翻译逻辑时无需重启 pi。
+const ENGINE_FLAG = Symbol.for("pi.uiZh.engine");
+const LINE_FLAG = Symbol.for("pi.uiZh.line");
+const TABLE_FLAG = Symbol.for("pi.uiZh.table");
+const CHROME_FLAG = Symbol.for("pi.uiZh.chrome");
+const ADDCHILD_FLAG = Symbol.for("pi.uiZh.trueAddChild");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 5;
+const CODE_VERSION = 6;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
@@ -386,13 +394,18 @@ async function collectCandidates(piRoot: string, wanted: string[], log: (m: stri
 /** 按原型打补丁：用 render 装饰器包裹类自己的 render（优先于继承来的）。 */
 function patchRender(Cls: any, wrap: (self: any, lines: string[], width: number) => string[]): boolean {
   const proto = Cls?.prototype;
-  if (!proto || typeof proto.render !== "function" || proto[RENDER_FLAG]) return false;
-  const original = proto.render;
+  if (!proto) return false;
+  // 记录“真正的原方法”：/reload 后旧包裹需要被换成新逻辑，靠它避免一层层套娃。
+  const trueOriginal = proto[TRUE_RENDER_FLAG] ?? proto.render;
+  if (typeof trueOriginal !== "function") return false;
+  if (!proto[TRUE_RENDER_FLAG]) {
+    Object.defineProperty(proto, TRUE_RENDER_FLAG, { configurable: true, writable: true, value: trueOriginal });
+  }
   Object.defineProperty(proto, "render", {
     configurable: true,
     writable: true,
     value: function (this: any, width: number) {
-      const lines = original.call(this, width);
+      const lines = trueOriginal.call(this, width);
       if (!Array.isArray(lines)) return lines;
       try {
         return wrap(this, lines, width);
@@ -401,6 +414,8 @@ function patchRender(Cls: any, wrap: (self: any, lines: string[], width: number)
       }
     },
   });
+  // 已装过补丁的类：包裹已被换成当前代码的新实现，但不算新补丁（调用方会记为“已存在”）。
+  if (proto[RENDER_FLAG]) return false;
   Object.defineProperty(proto, RENDER_FLAG, { configurable: true, writable: true, value: true });
   return true;
 }
@@ -476,7 +491,10 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     "visibleWidth", "truncateToWidth", "wrapTextWithAnsi",
   ];
   const { candidates, chunks } = await collectCandidates(piRoot, wanted, log);
-  const missing = wanted.filter((name) => !(candidates[name]?.length));
+  // `theme`/`wrapTextWithAnsi` 只用于增强（聊天区标题、折行）：bundle 运行时取不到属于正常，
+  // 不计入 missing，避免日志里出现“缺失类”误导（离线验证时它们能取到）。
+  const OPTIONAL_NAMES = new Set(["theme", "wrapTextWithAnsi"]);
+  const missing = wanted.filter((name) => !OPTIONAL_NAMES.has(name) && !(candidates[name]?.length));
 
   const metric = (name: string, fallback: (...args: any[]) => any) => {
     const found = candidates[name]?.find((c) => typeof c.value === "function");
@@ -502,9 +520,11 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
 
   const patched: string[] = [];
   const done = new Set<any>();
+  let alreadyPatched = 0;
   const each = (name: string, install: (value: any) => boolean): void => {
     for (const cand of candidates[name] ?? []) {
       if (done.has(cand.value)) continue;
+      const before = !!cand.value?.prototype?.[RENDER_FLAG];
       let ok = false;
       try {
         ok = install(cand.value);
@@ -514,6 +534,9 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
       if (ok) {
         done.add(cand.value);
         patched.push(`${name}@${cand.label}`);
+      } else if (before) {
+        // 旧代码在本进程早先已装过这个包裹；其内部逻辑是旧的，只能等完全重启 pi。
+        alreadyPatched += 1;
       }
     }
   };
@@ -600,12 +623,30 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     });
   };
 
+  // 已安装的补丁都通过下面的间接层取实现：/reload 载入新代码后，
+  // 只更新 globalThis 槽位即可让旧包裹用上新词典与新逻辑（无需重启 pi）。
+  globals[ENGINE_FLAG] = (label: string, lines: string[], width: number) => engine(label)(lines, width);
+  globals[LINE_FLAG] = (line: string, width: number) => translateLine(dict, line, width, visibleWidth, truncateToWidth);
+  globals[TABLE_FLAG] = (line: string) => translateTableRow(dict, line, visibleWidth, truncateToWidth);
+  const eng = (label: string) => {
+    const impl = globals[ENGINE_FLAG] as ((l: string, lines: string[], w: number) => string[]) | undefined;
+    return (lines: string[], width: number) => (impl ? impl(label, lines, width) : engine(label)(lines, width));
+  };
+  const lineZh = (text: string, width: number): string => {
+    const impl = globals[LINE_FLAG] as ((l: string, w: number) => string) | undefined;
+    return impl ? impl(text, width) : translateLine(dict, text, width, visibleWidth, truncateToWidth);
+  };
+  const tableZh = (text: string): string => {
+    const impl = globals[TABLE_FLAG] as ((l: string) => string) | undefined;
+    return impl ? impl(text) : translateTableRow(dict, text, visibleWidth, truncateToWidth);
+  };
+
   // 1) 设置界面主列表 + 其子菜单（子菜单由 SelectSubmenu 渲染后经 SettingsList.render 返回）
   each("SettingsList", (SettingsList) => {
     let applied = false;
     if (patchRender(SettingsList, (self, lines, width) => {
       wrapSettingsTheme(self, dict, visibleWidth);
-      return engine("SettingsList")(lines, width);
+      return eng("SettingsList")(lines, width);
     })) {
       applied = true;
     }
@@ -652,7 +693,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
       SelectList.prototype.renderItem = wrappedRenderItem;
       applied = true;
     }
-    if (patchRender(SelectList, (_self, lines, width) => engine("SelectList")(lines, width))) {
+    if (patchRender(SelectList, (_self, lines, width) => eng("SelectList")(lines, width))) {
       applied = true;
     }
     return applied;
@@ -665,15 +706,21 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     "SessionSelectorComponent", "TreeSelectorComponent", "OAuthSelectorComponent",
     "ExtensionSelectorComponent", "UserMessageSelectorComponent",
   ]) {
-    each(name, (Cls) => patchRender(Cls, (_self, lines, width) => engine(name)(lines, width)));
+    each(name, (Cls) => patchRender(Cls, (_self, lines, width) => eng(name)(lines, width)));
   }
 
   // 5) 兜底：挂到“编辑器容器”里的屏幕（/trust、/config、首次运行等类未导出的对话框）。
   //    editorContainer = 持有 Editor 的那个 Container；只有它的子节点会被翻译，
   //    聊天记录（ScrollView）与输入框绝不经过这里。
   const editorClass = candidates["Editor"]?.[0]?.value;
-  const editorContainers = new WeakSet<object>();
-  const chromeRoots = new WeakSet<object>();
+  // 这两个 WeakSet 必须跨 /reload 共享：addChild 挂钩是旧代码装的，包裹会被换成新代码，
+  // 若各用各的新实例，旧挂钩写进旧集合、新包裹读新集合，兜底汉化会直接失效。
+  const chromeState = ((globals as any)[CHROME_FLAG] ??= {
+    editorContainers: new WeakSet<object>(),
+    chromeRoots: new WeakSet<object>(),
+  });
+  const editorContainers: WeakSet<object> = chromeState.editorContainers;
+  const chromeRoots: WeakSet<object> = chromeState.chromeRoots;
   let chromeCount = 0;
   const markChrome = (container: any, child: any): void => {
     try {
@@ -685,8 +732,8 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
       if (!editorContainers.has(container) || chromeRoots.has(child)) return;
       chromeRoots.add(child);
       const Cls = child.constructor;
-      if (Cls?.prototype && typeof Cls.prototype.render === "function" && !Cls.prototype[RENDER_FLAG]) {
-        if (patchRender(Cls, (self, lines, width) => (chromeRoots.has(self) ? engine("chrome")(lines, width) : lines))) {
+      if (Cls?.prototype && typeof Cls.prototype.render === "function") {
+        if (patchRender(Cls, (self, lines, width) => (chromeRoots.has(self) ? eng("chrome")(lines, width) : lines))) {
           chromeCount++;
           log(`[chrome] ${Cls.name || "(匿名类)"} 加入兜底汉化`);
         }
@@ -698,20 +745,22 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
   const patchAddChild = (Cls: any): void => {
     const proto = Cls?.prototype;
     if (!proto || typeof proto.addChild !== "function") return;
-    const key = Symbol.for("pi.uiZh.addChildPatched");
-    if (proto[key]) return;
-    const original = proto.addChild;
+    // 同样要可替换：/reload 后旧挂钩写的旧 WeakSet 会失效，必须换成引用新共享状态的新挂钩。
+    const trueOriginal = proto[ADDCHILD_FLAG] ?? proto.addChild;
+    if (typeof trueOriginal !== "function") return;
+    if (!proto[ADDCHILD_FLAG]) {
+      Object.defineProperty(proto, ADDCHILD_FLAG, { configurable: true, writable: true, value: trueOriginal });
+    }
     proto.addChild = function (this: any, child: any) {
       markChrome(this, child);
-      return original.call(this, child);
+      return trueOriginal.call(this, child);
     };
-    proto[key] = true;
   };
   if (editorClass) {
     for (const name of ["Container", "VStack", "Box", "ScrollView"]) {
       for (const cand of candidates[name] ?? []) patchAddChild(cand.value);
     }
-    each("Container", (Container) => patchRender(Container, (self, lines, width) => (chromeRoots.has(self) ? engine("chrome")(lines, width) : lines)));
+    each("Container", (Container) => patchRender(Container, (self, lines, width) => (chromeRoots.has(self) ? eng("chrome")(lines, width) : lines)));
     log(`[chrome] addChild 挂钩就绪；兜底补丁 ${chromeCount} 个类`);
   } else {
     log("[chrome] 未取到 Editor 类，跳过兜底汉化（/trust、/config 等仍为英文）");
@@ -731,8 +780,8 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
       if (!isHotkeys) return lines;
       let misses = 0;
       return lines.map((line) => {
-        const table = translateTableRow(dict, line, visibleWidth, truncateToWidth);
-        const out = table !== line ? table : translateLine(dict, line, width, visibleWidth, truncateToWidth);
+        const table = tableZh(line);
+        const out = table !== line ? table : lineZh(line, width);
         // 诊断：把仍未汉化的表格行原文记进日志（最多 5 行），便于定位漏掉的文案。
         if (out === line && misses < 5) {
           const plain = analyzeLine(line).plain;
@@ -800,10 +849,18 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
 
   const result: UiZhResult = { piRoot, chunks, patched, missing, code: CODE_VERSION };
   globals[INSTALL_FLAG] = result;
+  if (missing.length) log(`[warn] 未取到：${missing.join(", ")}（相关功能跳过，其余照常）`);
   if (patched.length === 0) {
-    log(`[FAIL] 没有安装任何补丁；缺失类：${missing.join(", ") || "（无）"}`);
+    if (alreadyPatched > 0) {
+      log("[info] 补丁早已安装在类原型上（本进程早先的安装）：本次只更新了词典。若界面仍缺新功能，请完全退出并重启 pi。");
+    } else {
+      log(`[FAIL] 没有安装任何补丁；缺失类：${missing.join(", ") || "（无）"}`);
+    }
   } else {
     log(`界面汉化已启用：${patched.length} 处补丁 → ${patched.join(", ")}`);
+    if (alreadyPatched > 0) {
+      log(`[info] 另有 ${alreadyPatched} 处由早先的安装提供（逻辑升级需完全重启 pi）`);
+    }
   }
   return result;
 }

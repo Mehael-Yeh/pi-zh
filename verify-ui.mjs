@@ -174,11 +174,18 @@ check(after.thinking.some((l) => /中文|不推理|推理/.test(l)), "/thinking 
 check(after.images.some((l) => /[是否]/.test(l)), "/images 的 Yes/No 已中文化");
 check(after.images.some((l) => l.includes("在终端内嵌渲染图片") || l.includes("改为显示文本占位符")), "/images 说明已中文化");
 
-// 10) 幂等
+// 10) 幂等（同一版本重复安装直接返回缓存）
 const install2 = await ui.installUiZh({ piRoot, dictionary: dict, log: () => { } });
-check(install2.patched.length === install.patched.length, "重复安装补丁数一致",
+check(install2.patched.length === install.patched.length, "同版本重复安装返回缓存（补丁数一致）",
   `${install.patched.length} → ${install2.patched.length}`);
 check(JSON.stringify(renderAll()) === JSON.stringify(after), "重复安装后渲染结果不变");
+
+// 10b) 模拟 /reload：清掉安装缓存后重跑 —— 包裹应被替换成新实现，不重复套娃、输出不变
+Reflect.deleteProperty(globalThis, Symbol.for("pi.uiZh.installed"));
+const install3 = await ui.installUiZh({ piRoot, dictionary: dict, log: () => { } });
+check(install3.patched.length === 0, "清缓存后重装不重复套娃（包裹只被替换）",
+  `patched=${install3.patched.length}`);
+check(JSON.stringify(renderAll()) === JSON.stringify(after), "替换包裹后渲染结果不变");
 
 /* ------------------------------------------------ 兜底（编辑器容器）机制 ---- */
 // TrustSelectorComponent / ConfigSelectorComponent 等类不导出，无法直接 new；
