@@ -278,6 +278,31 @@ check(!hasZh(after.plainMarkdown), "普通 Markdown（模型回复）不被翻�
 const titleText = strip(String(names.theme.fg("accent", "Keyboard Shortcuts")));
 check(titleText.includes("键盘快捷键"), "聊天区标题（Keyboard Shortcuts）已中文化", titleText);
 
+// 聊天区状态行（showStatus → theme.fg("dim", message)）
+const reloadLine = strip(String(names.theme.fg(
+  "dim",
+  "Reloaded keybindings, extensions, skills, prompts, themes, and context files",
+)));
+check(reloadLine.includes("已重新加载"), "状态行（/reload 提示）已中文化", reloadLine);
+const trustLine = strip(String(names.theme.fg(
+  "dim",
+  "Reloaded keybindings, extensions, skills, prompts, themes, and context files; saved project trust",
+)));
+check(trustLine.includes("并已保存项目信任"), "状态行（含 saved project trust 变体）已中文化", trustLine);
+const modelStatus = strip(String(names.theme.fg("dim", "Model: claude-sonnet-4")));
+check(modelStatus.includes("模型："), "状态行（动态 Model: …）已中文化", modelStatus);
+const untouchedStatus = "A sentence that is not in the dictionary at all";
+check(
+  strip(String(names.theme.fg("dim", untouchedStatus))) === untouchedStatus,
+  "词典未收录的状态文本保持原样",
+  strip(String(names.theme.fg("dim", untouchedStatus))),
+);
+check(
+  strip(String(names.theme.fg("accent", "Model: claude-sonnet-4"))).includes("Model: claude-sonnet-4"),
+  "非 dim 角色的同样文本不被改写",
+  strip(String(names.theme.fg("accent", "Model: claude-sonnet-4"))),
+);
+
 /* ---------------------------------------------------- 屏幕样例文案自测 ---- */
 // 取各屏幕源码里的代表性文案，走兜底（编辑器容器）通道渲染，确认词典确实覆盖。
 const SAMPLE_LINES = [
@@ -367,7 +392,7 @@ if (sampleProbe.error) {
 
 /* ---------------------------------------------------- 词典自身一致性 / 漂移 ---- */
 
-const sections = ["labels", "descriptions", "texts", "values", "chromeTitles", "extensionTexts", "paragraphs"];
+const sections = ["labels", "descriptions", "texts", "values", "chromeTitles", "statusTexts", "extensionTexts", "paragraphs"];
 const empty = [];
 for (const section of sections) {
   for (const [k, v] of Object.entries(dict[section] ?? {})) {
@@ -390,6 +415,22 @@ for (const entry of dict.patterns ?? []) {
   }
 }
 check(badPatterns.length === 0, "patterns 正则均可编译", badPatterns.join("；"));
+
+// statusPatterns = 只作用于 theme.fg("dim", …) 的状态行，必须可编译且锚定（防止误伤聊天内容）
+const badStatusPatterns = [];
+for (const entry of dict.statusPatterns ?? []) {
+  const [source] = entry;
+  try {
+    new RegExp(source);
+  } catch (error) {
+    badStatusPatterns.push(`${source} → ${error.message}`);
+    continue;
+  }
+  if (!(source.startsWith("^") && source.endsWith("$"))) badStatusPatterns.push(`${source}（未锚定）`);
+}
+check(badStatusPatterns.length === 0, "statusPatterns 正则均可编译且锚定", badStatusPatterns.join("；"));
+const statusPatternFmt = (dict.statusPatterns ?? []).filter((e) => !Array.isArray(e) || e.length !== 2 || e.some((v) => typeof v !== "string"));
+check(statusPatternFmt.length === 0, "statusPatterns 均为 [正则, 替换] 成对字符串", statusPatternFmt.length + " 条异常");
 
 // paragraphPatterns = 多行段落用的正则（先拼接再匹配），同样必须可编译且成对
 const badBlockPatterns = [];

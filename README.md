@@ -78,7 +78,7 @@ Pi 没有任何“界面翻译”扩展钩子，扩展加载器解析到的包�
 | --- | --- |
 | `index.ts` | 扩展入口：装配命令菜单汉化 + 界面汉化（各自独立容错） |
 | `ui-zh.ts` | 界面汉化引擎：探测安装目录、定位 chunk、安装渲染装饰器、逐行翻译 |
-| `ui-zh.json` | 界面词典：`labels` / `descriptions` / `texts` / `patterns` / `values` / `paragraphs` / `paragraphPatterns` / `chromeTitles` / `extensionTexts` / `inline` |
+| `ui-zh.json` | 界面词典：`labels` / `descriptions` / `texts` / `patterns` / `values` / `paragraphs` / `paragraphPatterns` / `chromeTitles` / `statusTexts` / `statusPatterns` / `extensionTexts` / `inline` |
 | `translations.json` | 命令菜单用户词典（键为不带 `/` 的命令名），优先于第三方词典 |
 | `third-party.ts` | 第三方 npm 包命令词典（含别名、条件命令、提示模板） |
 | `upgrade-baseline.json`、`baseline-archive/` | 第三方包审计基线（命令菜单部分） |
@@ -104,6 +104,7 @@ Pi 没有任何“界面翻译”扩展钩子，扩展加载器解析到的包�
 | `patterns` | 带变量的整行文案，`["正则（字符串）", "中文模板（$1 引用捕获）"]` |
 | `values` | 值列取值（`true`→`开`、`sse`→`SSE` 等） |
 | `chromeTitles` | 打印到聊天区的界面标题（如 `Keyboard Shortcuts`），按原文精确匹配，仅用于全局主题包装 |
+| `statusTexts` / `statusPatterns` | 聊天区状态行（如 `/reload` 后的 `Reloaded keybindings…`、`Model: …`）：它们经 `theme.fg("dim", message)` 渲染，只在该角色下按整串（`statusPatterns` 必须锚定）匹配替换，不影响其它着色文本与模型回复 |
 | `extensionTexts` | 第三方扩展注册的文案（`/hotkeys` 的“扩展”小节，如 `Toggle web search activity`）。这些字串不在 Pi 源码里，因此单独成段、**不做漂移检查**；换机器或换扩展时按需增删 |
 | `paragraphs` | **多行段落**（会被终端按宽度折行的说明文字，如 `/bug` 的隐私声明）。引擎把连续非空行按空格拼回整段再查表，命中后按原缩进与宽度重新折行——因此换终端宽度也能命中 |
 | `paragraphPatterns` | 含动态内容的多行段落：`[正则, 替换文本]`，在拼回整段后再匹配，`$1` 等可用（如“上传到 <主机>；导出则…”） |
@@ -126,7 +127,7 @@ node "$HOME\.pi\agent\extensions\pi-zh\verify-ui.mjs" --strict
 node "$HOME\.pi\agent\extensions\pi-zh\coverage.mjs" --show 12
 ```
 
-`verify-ui.mjs` 覆盖：设置界面标签/值列对齐/英文说明保留/中文说明追加/提示行、`/theme`、`/thinking`、`/images`、认证屏幕的关键文案、`/hotkeys` 画框表格（表头/动作/小节/第三方扩展说明/边框对齐）与普通 Markdown 不受影响、聊天区标题、多行段落（`/bug` 隐私声明按宽度折行后仍能整段汉化）、输出不超宽、重复安装幂等、编辑器容器兜底生效且容器外不翻译、词典无空键、`descriptions` 与 `texts` 不重叠、patterns/paragraphPatterns 可编译、词典漂移检查。当前结果：48 通过 / 0 警告 / 0 失败。
+`verify-ui.mjs` 覆盖：设置界面标签/值列对齐/英文说明保留/中文说明追加/提示行、`/theme`、`/thinking`、`/images`、认证屏幕的关键文案、`/hotkeys` 画框表格（表头/动作/小节/第三方扩展说明/边框对齐）与普通 Markdown 不受影响、聊天区标题、状态行（`/reload` 提示、`Model: …` 等，仅 `dim` 角色且整串命中）、词典未收录的状态文本与非 `dim` 角色同样文本不被改写、输出不超宽、重复安装幂等、编辑器容器兜底生效且容器外不翻译、词典无空键、`descriptions` 与 `texts` 不重叠、patterns/paragraphPatterns/statusPatterns 可编译（statusPatterns 还必须锚定）、词典漂移检查。当前结果：58 通过 / 0 警告 / 0 失败。
 
 运行中的诊断日志写在扩展目录下的 `ui-zh.log`（记录补丁命中的类、屏幕首次渲染的原文行、未译行清单、`/hotkeys` 表格里仍未译的行；`PI_UI_ZH_LOG=0` 可关闭）。补词典时先看其中的 `[未译]` 行最省事。
 

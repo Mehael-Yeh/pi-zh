@@ -1022,5 +1022,109 @@
       "^Upload sends the report to (\\S+)\\. Export writes a zip archive to the current directory instead\\.$",
       "上传会把报告发送到 $1；导出则改为在当前目录写入 zip 压缩包。"
     ]
+  ],
+  "statusTexts": {
+    "Reloaded keybindings, extensions, skills, prompts, themes, and context files": "已重新加载快捷键、扩展、技能、提示词、主题与上下文文件",
+    "Reloaded keybindings, extensions, skills, prompts, themes, and context files; saved project trust": "已重新加载快捷键、扩展、技能、提示词、主题与上下文文件；并已保存项目信任",
+    "Forked to new session": "已分叉到新会话",
+    "Navigated to selected point": "已跳转到所选位置",
+    "Navigation cancelled": "已取消导航",
+    "Already at this point": "已在该位置",
+    "No messages to fork from": "没有可分叉的消息",
+    "No entries in session": "会话中没有条目",
+    "Branch summarization cancelled": "已取消分支摘要",
+    "Resumed session": "已恢复会话",
+    "Resumed session in current cwd": "已在当前目录恢复会话",
+    "Resume cancelled": "已取消恢复",
+    "Cloned to new session": "已克隆到新会话",
+    "Nothing to clone yet": "暂无可克隆的内容",
+    "Import cancelled": "已取消导入",
+    "Startup is still in progress": "启动仍在进行中",
+    "Auto-compaction cancelled": "已取消自动压缩",
+    "Queued message for after compaction": "消息已排队，压缩后发送",
+    "No queued messages to restore": "没有可恢复的排队消息",
+    "Suspend to background is not supported on Windows": "Windows 不支持挂起到后台",
+    "Close active overlays before changing TUI mode": "请先关闭活动浮层，再切换 TUI 模式",
+    "Current model does not support thinking": "当前模型不支持思考",
+    "Model selection saved to settings": "模型选择已保存到设置",
+    "Refreshing model catalogs…": "正在刷新模型目录…",
+    "Copied selected message to clipboard": "已复制所选消息到剪贴板",
+    "Copied last agent message to clipboard": "已复制最后一条助手消息到剪贴板",
+    "No login methods available.": "没有可用的登录方式。",
+    "No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.": "没有可移除的凭据。/logout 只移除由 /login 保存的凭据；环境变量与 models.json 配置不受影响。"
+  },
+  "statusPatterns": [
+    [
+      "^([^.]*)\\. Selected (.*)\\. Credentials saved to (.*)$",
+      "$1。已选择 $2。凭据已保存到：$3"
+    ],
+    [
+      "^([^.]*)\\. Credentials saved to (.*)\\. Refreshing model catalog…$",
+      "$1。凭据已保存到：$2。正在刷新模型目录…"
+    ],
+    [
+      "^([^.]*)\\. Credentials saved to (.*)$",
+      "$1。凭据已保存到：$2"
+    ],
+    [
+      "^Saved trust decision: (.*)\\. Restart (.*) for this to take effect\\.$",
+      "已保存信任决定：$1。请重启 $2 使其生效。"
+    ],
+    [
+      "^Restored (.*) queued message[s]? to editor$",
+      "已把 $1 条排队消息恢复到输入框"
+    ],
+    [
+      "^Session compacted (.*)$",
+      "会话已压缩 $1"
+    ],
+    [
+      "^Session exported to: (.*)$",
+      "会话已导出到：$1"
+    ],
+    [
+      "^Session imported from: (.*)$",
+      "会话已从以下位置导入：$1"
+    ],
+    [
+      "^Default model: (.*)$",
+      "默认模型：$1"
+    ],
+    [
+      "^Model: (.*)$",
+      "模型：$1"
+    ],
+    [
+      "^Switched to (.*)$",
+      "已切换到 $1"
+    ],
+    [
+      "^Default thinking level: (.*)$",
+      "默认思考级别：$1"
+    ],
+    [
+      "^Thinking level: (.*)$",
+      "思考级别：$1"
+    ],
+    [
+      "^Tool output: (.*)$",
+      "工具输出：$1"
+    ],
+    [
+      "^Thinking blocks: (.*)$",
+      "思考块：$1"
+    ],
+    [
+      "^Cache warming: (.*)$",
+      "缓存预热：$1"
+    ],
+    [
+      "^HTTP idle timeout: (.*)$",
+      "HTTP 空闲超时：$1"
+    ],
+    [
+      "^TUI mode: (.*)$",
+      "TUI 模式：$1"
+    ]
   ]
 }

@@ -38,6 +38,13 @@ export interface UiDictionary {
   paragraphPatterns?: [string, string][];
   /** 聊天区极少数界面标题（如 /hotkeys 的 “Keyboard Shortcuts”）：按原文精确匹配，只用于全局主题包装。 */
   chromeTitles?: Record<string, string>;
+  /**
+   * 聊天区状态行（如 /reload 后的 “Reloaded keybindings, …”）。
+   * 这类文本经 `theme.fg("dim", message)` 渲染，按原文精确匹配后由全局主题包装替换。
+   */
+  statusTexts?: Record<string, string>;
+  /** 含动态内容的状态行（如 “Model: claude-x”）：只用于 `theme.fg("dim", …)` 全串匹配，必须锚定。 */
+  statusPatterns?: [string, string][];
   values?: Record<string, string>;
   /** 含动态内容（按键提示、级别等）的整行：正则 → 替换文本，$1 等可用。 */
   patterns?: [string, string][];
@@ -80,7 +87,7 @@ const CHROME_FLAG = Symbol.for("pi.uiZh.chrome");
 const ADDCHILD_FLAG = Symbol.for("pi.uiZh.trueAddChild");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 6;
+const CODE_VERSION = 8;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
@@ -467,7 +474,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
   log(
     `[dict] labels=${size(loadedDict.labels)} descriptions=${size(loadedDict.descriptions)} texts=${size(loadedDict.texts)} ` +
       `patterns=${size(loadedDict.patterns)} values=${size(loadedDict.values)} ` +
-      `extensionTexts=${size(loadedDict.extensionTexts)} chromeTitles=${size(loadedDict.chromeTitles)} paragraphs=${size(loadedDict.paragraphs)}`,
+      `extensionTexts=${size(loadedDict.extensionTexts)} chromeTitles=${size(loadedDict.chromeTitles)} statusTexts=${size(loadedDict.statusTexts)} statusPatterns=${size(loadedDict.statusPatterns)} paragraphs=${size(loadedDict.paragraphs)}`,
   );
   // 注意：/reload 会在同一进程里重新加载扩展，而 globalThis 会保留。
   // 若上次安装是 0 处补丁（例如旧版本残留），必须重新安装而不是直接返回缓存。
@@ -797,13 +804,32 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     }),
   );
   const chromeTitles = dict.chromeTitles ?? {};
-  if (Object.keys(chromeTitles).length > 0) {
+  const statusTexts = dict.statusTexts ?? {};
+  const statusPatterns = dict.statusPatterns ?? [];
+  const applyStatusPatterns = (text: string): string | undefined => {
+    for (const [source, replacement] of statusPatterns) {
+      let re: RegExp;
+      try {
+        re = new RegExp(source);
+      } catch {
+        continue;
+      }
+      if (re.test(text)) return text.replace(re, replacement);
+    }
+    return undefined;
+  };
+  if (Object.keys(chromeTitles).length > 0 || Object.keys(statusTexts).length > 0 || statusPatterns.length > 0) {
     const translateTitle = (method: string, original: (...args: any[]) => any) =>
       function (this: any, ...args: any[]) {
         const last = args.length - 1;
         const text = args[last];
-        if (typeof text === "string" && text.length <= 80) {
-          const zh = chromeTitles[text.trim()];
+        if (typeof text === "string") {
+          const trimmed = text.trim();
+          const zh =
+            // 界面标题（theme.fg("accent", "…") / theme.bold("…")）
+            (text.length <= 80 ? chromeTitles[trimmed] : undefined) ??
+            // 聊天区状态行：只认 theme.fg("dim", message) 这种整串调用，避免动到其它着色文本。
+            (method === "fg" && args[0] === "dim" ? statusTexts[trimmed] ?? applyStatusPatterns(trimmed) : undefined);
           if (zh) args[last] = zh;
         }
         return original.apply(this, args);
@@ -814,10 +840,13 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
       const proto = themeObject?.constructor?.prototype;
       if (!proto) continue;
       for (const method of ["fg", "bold"]) {
-        const original = proto[method];
+        // 与 patchRender 同理：记住真正的原方法，每次安装都用它包一层新实现，
+        // 这样 /reload 后新加的词（如状态行 statusTexts）才会立即生效，且不会套娃。
+        const originalKey = Symbol.for(`pi.uiZh.titleOriginal.${method}`);
+        const original = (proto[originalKey] as ((...args: any[]) => any) | undefined) ?? proto[method];
         if (typeof original !== "function") continue;
-        const guard = Symbol.for(`pi.uiZh.titlePatched.${method}`);
-        if (proto[guard]) continue;
+        const firstInstall = !proto[originalKey];
+        proto[originalKey] = original;
         try {
           Object.defineProperty(proto, method, {
             value: translateTitle(method, original),
@@ -843,8 +872,9 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
           log(`[patch] theme.${method} 自检异常：${errText(error)}`);
           continue;
         }
-        proto[guard] = true;
-        patched.push(`theme.${method}@${cand.label}`);
+        const already = !firstInstall;
+        if (already) alreadyPatched += 1;
+        else patched.push(`theme.${method}@${cand.label}`);
       }
     }
   }
@@ -854,14 +884,14 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
   if (missing.length) log(`[warn] 未取到：${missing.join(", ")}（相关功能跳过，其余照常）`);
   if (patched.length === 0) {
     if (alreadyPatched > 0) {
-      log("[info] 补丁早已安装在类原型上（本进程早先的安装）：本次只更新了词典。若界面仍缺新功能，请完全退出并重启 pi。");
+      log("[info] 补丁早已安装在类原型上（本进程早先的安装）：本次只更新了词典。若界面仍缺新功能，请 /reload；只有补丁点（新增要挂钩的类）才需要完全重启 pi。");
     } else {
       log(`[FAIL] 没有安装任何补丁；缺失类：${missing.join(", ") || "（无）"}`);
     }
   } else {
     log(`界面汉化已启用：${patched.length} 处补丁 → ${patched.join(", ")}`);
     if (alreadyPatched > 0) {
-      log(`[info] 另有 ${alreadyPatched} 处由早先的安装提供（逻辑升级需完全重启 pi）`);
+      log(`[info] 另有 ${alreadyPatched} 处由早先的安装提供（已换成新实现；/reload 即可生效）`);
     }
   }
   return result;
