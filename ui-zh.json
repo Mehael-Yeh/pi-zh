@@ -195,7 +195,7 @@
     "No matching commands": "没有匹配的命令",
     "Refreshing model catalogs…": "正在刷新模型目录…",
     "Only showing models from configured providers. Use /login to add providers.": "只显示已配置提供方的模型。用 /login 添加提供方。",
-    "Model refresh timed out; showing cached models.": "刷新模型目录超时；显示缓存中的模型。",
+    "Model refresh timed out; showing cached models.": "模型刷新超时，改用缓存中的模型。",
     "Model catalogs refreshed.": "模型目录已刷新。",
     "(all/scoped)": "（全部/范围内）",
     "no results": "无结果",
@@ -355,9 +355,22 @@
     "Run bash command (excluded from context)": "运行 bash 命令（不计入上下文）",
     "What went wrong? (optional)": "哪里出了错？（可留空）",
     "Cancel": "取消",
-    "tab scope · re:<pattern> regex · \"phrase\" exact": "Tab 切换范围 · re:正则 正则匹配 · \"短语\" 精确匹配"
+    "tab scope · re:<pattern> regex · \"phrase\" exact": "Tab 切换范围 · re:正则 正则匹配 · \"短语\" 精确匹配",
+    "Radius authentication is not configured. Run '/login radius' first.": "未配置 Radius 认证，请先运行 “/login radius”。"
   },
   "patterns": [
+    [
+      "^Summary: written by the current model$",
+      "摘要：由当前模型撰写"
+    ],
+    [
+      "^Summary: written by (.*)$",
+      "摘要：由 $1 撰写"
+    ],
+    [
+      "^Could not refresh (\\d+) model catalogs \\((.*)\\); showing cached models\\.$",
+      "无法刷新 $1 个模型目录（$2），改用缓存中的模型。"
+    ],
     [
       "^↑ (\\d+) more$",
       "↑ 还有 $1 行"
@@ -933,6 +946,10 @@
     [
       "^ctrl\\+s sort · ctrl\\+n named · ctrl\\+d delete · ctrl\\+p path \\((on|off)\\) · ctrl\\+r rename$",
       "Ctrl+S 排序 · Ctrl+N 命名 · Ctrl+D 删除 · Ctrl+P 路径（$1） · Ctrl+R 重命名"
+    ],
+    [
+      "^(.+) · default$",
+      "$1 · 默认"
     ]
   ],
   "values": {
@@ -994,7 +1011,9 @@
     "Detach the active foreground subagent and keep it running in the background": "把前台子代理分离到后台继续运行"
   },
   "paragraphs": {
-    "This report goes to the Pi developers (Earendil) and is not shared publicly. It includes your pi version, operating system, the current model and provider configuration (without API keys), loaded extensions, settings, and provider error diagnostics from this session.": "这份报告会发送给 Pi 开发者（Earendil），不会公开分享。报告包含你的 Pi 版本、操作系统、当前模型与提供方配置（不含 API 密钥）、已加载的扩展、设置，以及本次会话的提供方错误诊断信息。"
+    "This report goes to the Pi developers (Earendil) and is not shared publicly. It includes your pi version, operating system, the current model and provider configuration (without API keys), loaded extensions, settings, and provider error diagnostics from this session.": "这份报告会发送给 Pi 开发者（Earendil），不会公开分享。报告包含你的 Pi 版本、操作系统、当前模型与提供方配置（不含 API 密钥）、已加载的扩展、设置，以及本次会话的提供方错误诊断信息。",
+    "The transcript contains your messages, model output, tool calls and their results, including file contents and command output read during this session.": "会话记录包含你的消息、模型输出、工具调用及其结果——包括本次会话读取过的文件内容与命令输出。",
+    "Opting in stores a tracking identifier in settings.json and enables anonymous usage analytics. This helps us to better debug, reproduce, and resolve issues and bugs within Pi. You can observe what is shared using /privacy and make changes anytime in settings.json.": "选择开启后会在 settings.json 里保存一个追踪标识，并开启匿名使用统计。这有助于我们更好地调试、复现和修复 Pi 中的问题。你可以用 /privacy 查看共享了什么，也可随时在 settings.json 中更改。"
   },
   "paragraphPatterns": [
     [

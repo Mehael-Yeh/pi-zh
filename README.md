@@ -121,11 +121,22 @@ node "$HOME\.pi\agent\extensions\pi-zh\verify.mjs" "$HOME\.pi\agent\install\rele
 
 # 内置界面：离线构造真实组件并渲染，逐条断言；--strict 把警告当失败
 node "$HOME\.pi\agent\extensions\pi-zh\verify-ui.mjs" --strict
+
+# 覆盖率盘点：把 Pi 安装里的界面字面量逐个与词典对照，列出还没覆盖的文案
+node "$HOME\.pi\agent\extensions\pi-zh\coverage.mjs" --show 12
 ```
 
 `verify-ui.mjs` 覆盖：设置界面标签/值列对齐/英文说明保留/中文说明追加/提示行、`/theme`、`/thinking`、`/images`、认证屏幕的关键文案、`/hotkeys` 画框表格（表头/动作/小节/第三方扩展说明/边框对齐）与普通 Markdown 不受影响、聊天区标题、多行段落（`/bug` 隐私声明按宽度折行后仍能整段汉化）、输出不超宽、重复安装幂等、编辑器容器兜底生效且容器外不翻译、词典无空键、`descriptions` 与 `texts` 不重叠、patterns/paragraphPatterns 可编译、词典漂移检查。当前结果：48 通过 / 0 警告 / 0 失败。
 
-运行中的诊断日志写在扩展目录下的 `ui-zh.log`（记录补丁命中的类、屏幕首次渲染的原文行、未译行清单；`PI_UI_ZH_LOG=0` 可关闭）。补词典时先看其中的 `[未译]` 行最省事。
+运行中的诊断日志写在扩展目录下的 `ui-zh.log`（记录补丁命中的类、屏幕首次渲染的原文行、未译行清单、`/hotkeys` 表格里仍未译的行；`PI_UI_ZH_LOG=0` 可关闭）。补词典时先看其中的 `[未译]` 行最省事。
+
+`coverage.mjs` 给出量化进度（当前：interactive 模式界面字面量 302 条，覆盖 205 条 = 67.9%）。剩下的未覆盖项分三类：
+
+| 类别 | 举例 | 为何未覆盖 |
+| --- | --- | --- |
+| 聊天记录/消息/工具输出 | `AssistantMessageComponent`、`BranchSummaryMessage`、`diff`、`mermaid` | 属设计不翻译（只翻译界面外壳），翻译会污染模型输出 |
+| 通知/toast 与聊天区面板 | `[Skill conflicts]`、`Clipboard file path contains control characters`、已加载资源面板 | 渲染在聊天区而非编辑器容器，需新增补丁点（会让 `CODE_VERSION` 递增、需完整重启 Pi） |
+| 源码里的代码片段/专有名词 | `loop: true`、模型名、主题名、路径、时间戳 | 不是给人看的界面文案，或属专有名词 |
 
 界面汉化沿用命令菜单的一贯约束：**只显示、不改行为**。真实终端视觉效果建议在交互会话里确认一次。
 
