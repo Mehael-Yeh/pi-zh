@@ -66,8 +66,9 @@ function installCommandMenu(ctx: ExtensionContext): void {
 function installUi(ctx: ExtensionContext): void {
   if (process.env.PI_UI_ZH === "0" || process.env.PI_UI_ZH === "off") return;
   void installUiZh({ piRoot: process.env.PI_UI_ZH_ROOT, context: `mode=${ctx.mode} argv1=${process.argv[1] ?? "?"} cwd=${process.cwd()}` }).then((result) => {
-    // 一处补丁都没装上说明类没找到（失败模式很安静），必须让用户看到。
-    if (result.patched.length === 0) {
+    // /reload 重装时 patched 为空是正常的（包裹被换成新实现，计入 already）；
+    // 只有“一处都没装上、也没有旧包裹可替换”才是真的失败，必须让用户看到。
+    if (result.patched.length === 0 && result.already === 0) {
       ctx.ui.notify("界面汉化未生效：没有找到可打补丁的界面类（详见扩展目录 ui-zh.log）", "warning");
     }
   }).catch((error: unknown) => {

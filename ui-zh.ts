@@ -57,6 +57,8 @@ export interface UiZhResult {
   piRoot: string | null;
   chunks: string[];
   patched: string[];
+  /** 本次只被“换新逻辑”（包裹早已存在）的补丁数；0 补丁 + already>0 属于正常的 /reload 重装。 */
+  already: number;
   missing: string[];
   /** 补丁代码版本：与 ui-zh.ts 的 CODE_VERSION 不一致时，/reload 会重新安装补丁。 */
   code: number;
@@ -847,7 +849,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     }
   }
 
-  const result: UiZhResult = { piRoot, chunks, patched, missing, code: CODE_VERSION };
+  const result: UiZhResult = { piRoot, chunks, patched, already: alreadyPatched, missing, code: CODE_VERSION };
   globals[INSTALL_FLAG] = result;
   if (missing.length) log(`[warn] 未取到：${missing.join(", ")}（相关功能跳过，其余照常）`);
   if (patched.length === 0) {

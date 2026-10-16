@@ -185,6 +185,8 @@ Reflect.deleteProperty(globalThis, Symbol.for("pi.uiZh.installed"));
 const install3 = await ui.installUiZh({ piRoot, dictionary: dict, log: () => { } });
 check(install3.patched.length === 0, "清缓存后重装不重复套娃（包裹只被替换）",
   `patched=${install3.patched.length}`);
+check(install3.already > 0, "重装时把“换新逻辑”的补丁计入 already（避免误报未生效）",
+  `already=${install3.already}`);
 check(JSON.stringify(renderAll()) === JSON.stringify(after), "替换包裹后渲染结果不变");
 
 /* ------------------------------------------------ 兜底（编辑器容器）机制 ---- */
