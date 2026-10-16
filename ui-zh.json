@@ -119,7 +119,8 @@
     "Sign in with Radius": "使用 Radius 登录",
     "(current)": "（当前）",
     "user:": "用户：",
-    "assistant:": "助手："
+    "assistant:": "助手：",
+    "Session share destination": "会话分享目标"
   },
   "descriptions": {
     "Warn when Anthropic subscription auth may use paid extra usage": "当 Anthropic 订阅认证可能使用付费额外用量时发出警告",
@@ -178,7 +179,8 @@
     "Select the theme to use for light terminal appearance": "选择终端浅色外观使用的主题",
     "Select the theme to use for dark terminal appearance": "选择终端深色外观使用的主题",
     "Select a model to configure": "选择要配置的模型",
-    "Select default thinking level for this model": "为该模型选择默认思考级别"
+    "Select default thinking level for this model": "为该模型选择默认思考级别",
+    "Where to upload sessions with /share (auto prefers Radius when authenticated, otherwise GitHub Gist)": "用 /share 上传会话的去向（auto：已登录 Radius 时优先用 Radius，否则用 GitHub Gist）"
   },
   "texts": {
     "Automatic Theme": "自动主题",

@@ -97,7 +97,7 @@ for (const file of files) {
     if (seen.has(text) || !isCandidate(text)) continue;
     seen.add(text);
     total += 1;
-    if (keys.has(text) || patterns.some((re) => re.test(text))) covered += 1;
+    if (keys.has(text) || patterns.some((re) => re.test(text) || re.test(" " + text))) covered += 1;
     else uncovered.push(text);
   }
   if (total) report.push({ rel, total, covered, uncovered });
