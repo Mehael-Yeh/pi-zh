@@ -296,6 +296,13 @@ const reloadBoxLine = strip(String(names.theme.fg(
   "Reloading keybindings, extensions, skills, prompts, themes, and context files...",
 )));
 check(reloadBoxLine.includes("正在重新加载"), "状态行（/reload 进行中的覆盖框）已中文化", reloadBoxLine);
+
+// 全屏指示条（tui-renderer.js:16，role = text，带快捷键后缀与两侧 padding）
+const jumpIndicator = strip(String(names.theme.fg("text", " ↓ Jump to latest message · ^⌘↓ ")));
+check(jumpIndicator.includes("跳到最新消息") && jumpIndicator.includes("^⌘↓"), "全屏指示条（Jump to latest message）已中文化且保留快捷键", jumpIndicator);
+check(jumpIndicator.startsWith(" ") && jumpIndicator.endsWith(" "), "全屏指示条两侧 padding 保留", JSON.stringify(jumpIndicator));
+const plainYes = strip(String(names.theme.fg("text", "Yes")));
+check(plainYes === "Yes", "text 角色下普通短词（Yes）不被改写", plainYes);
 const untouchedStatus = "A sentence that is not in the dictionary at all";
 check(
   strip(String(names.theme.fg("dim", untouchedStatus))) === untouchedStatus,
@@ -436,6 +443,21 @@ for (const entry of dict.statusPatterns ?? []) {
 check(badStatusPatterns.length === 0, "statusPatterns 正则均可编译且锚定", badStatusPatterns.join("；"));
 const statusPatternFmt = (dict.statusPatterns ?? []).filter((e) => !Array.isArray(e) || e.length !== 2 || e.some((v) => typeof v !== "string"));
 check(statusPatternFmt.length === 0, "statusPatterns 均为 [正则, 替换] 成对字符串", statusPatternFmt.length + " 条异常");
+
+// textPatterns = 与角色无关的界面指示条（全屏按钮等），同样必须可编译且锚定
+const badTextPatterns = [];
+for (const entry of dict.textPatterns ?? []) {
+  const [source] = entry;
+  try {
+    new RegExp(source);
+  } catch (error) {
+    badTextPatterns.push(`${source} → ${error.message}`);
+    continue;
+  }
+  if (!(source.startsWith("^") && source.endsWith("$"))) badTextPatterns.push(`${source}（未锚定）`);
+  if (!Array.isArray(entry) || entry.length !== 2 || entry.some((v) => typeof v !== "string")) badTextPatterns.push(`${source}（非成对字符串）`);
+}
+check(badTextPatterns.length === 0, "textPatterns 正则均可编译、锚定且成对", badTextPatterns.join("；"));
 
 // paragraphPatterns = 多行段落用的正则（先拼接再匹配），同样必须可编译且成对
 const badBlockPatterns = [];

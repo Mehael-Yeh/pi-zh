@@ -43,8 +43,13 @@ export interface UiDictionary {
    * 这类文本经 `theme.fg("dim", message)` 渲染，按原文精确匹配后由全局主题包装替换。
    */
   statusTexts?: Record<string, string>;
-  /** 含动态内容的状态行（如 “Model: claude-x”）：只用于 `theme.fg("dim", …)` 全串匹配，必须锚定。 */
+  /** 含动态内容的状态行（如 “Model: claude-x”）：只用于 `theme.fg("dim"/"muted", …)` 全串匹配，必须锚定。 */
   statusPatterns?: [string, string][];
+  /**
+   * 聊天/全屏区里其余少数界面指示条（如全屏模式的 “↓ Jump to latest message · ^⌘↓”）：
+   * 与角色无关的锚定正则，只收录确定是界面控件的整串（不碰模型回复）。
+   */
+  textPatterns?: [string, string][];
   values?: Record<string, string>;
   /** 含动态内容（按键提示、级别等）的整行：正则 → 替换文本，$1 等可用。 */
   patterns?: [string, string][];
@@ -93,7 +98,7 @@ const CHROME_FLAG = Symbol.for("pi.uiZh.chrome");
 const ADDCHILD_FLAG = Symbol.for("pi.uiZh.trueAddChild");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 8;
+const CODE_VERSION = 9;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
@@ -480,7 +485,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
   log(
     `[dict] labels=${size(loadedDict.labels)} descriptions=${size(loadedDict.descriptions)} texts=${size(loadedDict.texts)} ` +
       `patterns=${size(loadedDict.patterns)} values=${size(loadedDict.values)} ` +
-      `extensionTexts=${size(loadedDict.extensionTexts)} chromeTitles=${size(loadedDict.chromeTitles)} statusTexts=${size(loadedDict.statusTexts)} statusPatterns=${size(loadedDict.statusPatterns)} paragraphs=${size(loadedDict.paragraphs)}`,
+      `extensionTexts=${size(loadedDict.extensionTexts)} chromeTitles=${size(loadedDict.chromeTitles)} statusTexts=${size(loadedDict.statusTexts)} statusPatterns=${size(loadedDict.statusPatterns)} textPatterns=${size(loadedDict.textPatterns)} paragraphs=${size(loadedDict.paragraphs)}`,
   );
   // 注意：/reload 会在同一进程里重新加载扩展，而 globalThis 会保留。
   // 若上次安装是 0 处补丁（例如旧版本残留），必须重新安装而不是直接返回缓存。
@@ -834,8 +839,9 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
   const chromeTitles = dict.chromeTitles ?? {};
   const statusTexts = dict.statusTexts ?? {};
   const statusPatterns = dict.statusPatterns ?? [];
-  const applyStatusPatterns = (text: string): string | undefined => {
-    for (const [source, replacement] of statusPatterns) {
+  const textPatterns = dict.textPatterns ?? [];
+  const applyPattern = (list: [string, string][], text: string): string | undefined => {
+    for (const [source, replacement] of list) {
       let re: RegExp;
       try {
         re = new RegExp(source);
@@ -846,7 +852,7 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     }
     return undefined;
   };
-  if (Object.keys(chromeTitles).length > 0 || Object.keys(statusTexts).length > 0 || statusPatterns.length > 0) {
+  if (Object.keys(chromeTitles).length > 0 || Object.keys(statusTexts).length > 0 || statusPatterns.length > 0 || textPatterns.length > 0) {
     const translateTitle = (method: string, original: (...args: any[]) => any) =>
       function (this: any, ...args: any[]) {
         const last = args.length - 1;
@@ -857,8 +863,17 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
             // 界面标题（theme.fg("accent", "…") / theme.bold("…")）
             (text.length <= 80 ? chromeTitles[trimmed] : undefined) ??
             // 聊天区状态行：只认 theme.fg("dim"/"muted", message) 这种整串调用，避免动到其它着色文本。
-            (method === "fg" && (args[0] === "dim" || args[0] === "muted") ? statusTexts[trimmed] ?? applyStatusPatterns(trimmed) : undefined);
-          if (zh) args[last] = zh;
+            (method === "fg" && (args[0] === "dim" || args[0] === "muted")
+              ? statusTexts[trimmed] ?? applyPattern(statusPatterns, trimmed)
+              : undefined) ??
+            // 其它被明确收录的界面指示条（锚定正则，与角色无关）。
+            applyPattern(textPatterns, trimmed);
+          // 保留原字符串首尾空白（如全屏指示条两侧的 padding），避免布局位移。
+          if (zh) {
+            const leading = text.slice(0, text.length - text.trimStart().length);
+            const trailing = text.slice(text.trimEnd().length);
+            args[last] = leading + zh + trailing;
+          }
         }
         return original.apply(this, args);
       };

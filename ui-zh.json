@@ -1127,5 +1127,11 @@
       "^TUI mode: (.*)$",
       "TUI 模式：$1"
     ]
+  ],
+  "textPatterns": [
+    [
+      "^↓ Jump to latest message( · .*)?$",
+      "↓ 跳到最新消息$1"
+    ]
   ]
 }
