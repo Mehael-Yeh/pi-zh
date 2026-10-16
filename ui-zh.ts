@@ -58,6 +58,12 @@ export interface UiZhOptions {
   log?: (message: string) => void;
   /** 附加上下文（写入诊断日志，便于定位运行时环境）。 */
   context?: string;
+  /**
+   * 运行时活动主题单例（来自 `ctx.ui.theme`）。
+   * 主题单例并未从任何包入口导出，chunk 源在 jiti 下也不可用，
+   * 因此必须由调用方传入，否则聊天区标题/状态行的全局主题包装无法安装。
+   */
+  liveTheme?: unknown;
 }
 
 export interface UiZhResult {
@@ -500,6 +506,28 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
     "visibleWidth", "truncateToWidth", "wrapTextWithAnsi",
   ];
   const { candidates, chunks } = await collectCandidates(piRoot, wanted, log);
+  // 主题单例：既不在包入口，也不在 chunk 导出里。
+  // theme.js 里 `export const theme = new Proxy({}, { get: (_, p) => globalThis[THEME_KEY][p] })`，
+  // 真实主题对象只存在 globalThis[Symbol.for("@earendil-works/pi-coding-agent:theme")] 下。
+  const themeKeys = [
+    Symbol.for("@earendil-works/pi-coding-agent:theme"),
+    Symbol.for("@mariozechner/pi-coding-agent:theme"),
+  ];
+  const themed: unknown[] = [];
+  for (const key of themeKeys) {
+    const value = (globalThis as Record<symbol, unknown>)[key];
+    if (value) themed.push(value);
+  }
+  if (options.liveTheme) themed.push(options.liveTheme);
+  if (themed.length > 0) {
+    const entry = candidates["theme"] ?? (candidates["theme"] = []);
+    for (const value of themed) {
+      if (!entry.some((cand) => cand.value === value)) {
+        entry.push({ value: value as any, label: "globalThis:theme" });
+      }
+    }
+    log(`[theme] 活动主题单例候选共 ${entry.length} 份（globalThis / ctx.ui.theme）`);
+  }
   // `theme`/`wrapTextWithAnsi` 只用于增强（聊天区标题、折行）：bundle 运行时取不到属于正常，
   // 不计入 missing，避免日志里出现“缺失类”误导（离线验证时它们能取到）。
   const OPTIONAL_NAMES = new Set(["theme", "wrapTextWithAnsi"]);
@@ -828,8 +856,8 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
           const zh =
             // 界面标题（theme.fg("accent", "…") / theme.bold("…")）
             (text.length <= 80 ? chromeTitles[trimmed] : undefined) ??
-            // 聊天区状态行：只认 theme.fg("dim", message) 这种整串调用，避免动到其它着色文本。
-            (method === "fg" && args[0] === "dim" ? statusTexts[trimmed] ?? applyStatusPatterns(trimmed) : undefined);
+            // 聊天区状态行：只认 theme.fg("dim"/"muted", message) 这种整串调用，避免动到其它着色文本。
+            (method === "fg" && (args[0] === "dim" || args[0] === "muted") ? statusTexts[trimmed] ?? applyStatusPatterns(trimmed) : undefined);
           if (zh) args[last] = zh;
         }
         return original.apply(this, args);
@@ -857,13 +885,14 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
           log(`[patch] theme.${method} 失败：${errText(error)}`);
           continue;
         }
-        // 自检：包装后必须真的能翻出一个标题，否则说明代理拦住了写入。
+        // 自检：必须用「属性查找」走真实读路径（原型链），不能直接调 proto.fg——
+        // 那样只是调我们自己的函数，代理/原型没挂对也会假成功。
         try {
           const sample = Object.keys(chromeTitles)[0];
           const probe =
             method === "fg"
-              ? String(proto.fg.call(themeObject, "accent", sample))
-              : String(proto.bold.call(themeObject, sample));
+              ? String((themeObject as Record<string, any>).fg("accent", sample))
+              : String((themeObject as Record<string, any>).bold(sample));
           if (!probe.includes(chromeTitles[sample])) {
             log(`[patch] theme.${method} 包装未生效（跨 realm 代理拦截），跳过`);
             continue;

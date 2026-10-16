@@ -291,6 +291,11 @@ const trustLine = strip(String(names.theme.fg(
 check(trustLine.includes("并已保存项目信任"), "状态行（含 saved project trust 变体）已中文化", trustLine);
 const modelStatus = strip(String(names.theme.fg("dim", "Model: claude-sonnet-4")));
 check(modelStatus.includes("模型："), "状态行（动态 Model: …）已中文化", modelStatus);
+const reloadBoxLine = strip(String(names.theme.fg(
+  "muted",
+  "Reloading keybindings, extensions, skills, prompts, themes, and context files...",
+)));
+check(reloadBoxLine.includes("正在重新加载"), "状态行（/reload 进行中的覆盖框）已中文化", reloadBoxLine);
 const untouchedStatus = "A sentence that is not in the dictionary at all";
 check(
   strip(String(names.theme.fg("dim", untouchedStatus))) === untouchedStatus,

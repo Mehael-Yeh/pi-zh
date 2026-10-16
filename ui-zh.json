@@ -1051,7 +1051,8 @@
     "Copied selected message to clipboard": "已复制所选消息到剪贴板",
     "Copied last agent message to clipboard": "已复制最后一条助手消息到剪贴板",
     "No login methods available.": "没有可用的登录方式。",
-    "No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.": "没有可移除的凭据。/logout 只移除由 /login 保存的凭据；环境变量与 models.json 配置不受影响。"
+    "No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.": "没有可移除的凭据。/logout 只移除由 /login 保存的凭据；环境变量与 models.json 配置不受影响。",
+    "Reloading keybindings, extensions, skills, prompts, themes, and context files...": "正在重新加载快捷键、扩展、技能、提示词、主题与上下文文件…"
   },
   "statusPatterns": [
     [
