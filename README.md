@@ -54,7 +54,8 @@ Pi 没有任何“界面翻译”扩展钩子，扩展加载器解析到的包�
 3. **两条来源都收集，并且对每个“不同对象”的副本分别打补丁**，因此无论渲染走哪一份都会生效；
 4. 在这些类上安装 `render` 装饰器：先取原始行，再按词典后处理（保持 ANSI、保持可视宽度、异常时原样回退），最后交回原渲染流程；
 5. 对**没有导出**、无法按类名定位的屏幕（`/trust`、`/config` 等），挂钩 `Container.addChild`：凡是加入了编辑器（`Editor`）的容器就记为“编辑器容器”，之后加入其中的屏幕组件（即 Pi 的 `showSelector` 挂载的所有对话框）自动获得同一套整行汉化；聊天记录（`ScrollView`）与输入框不在其中；
-6. 对**打印到聊天区**的界面输出（`/hotkeys`）：只在 Markdown 内容里出现 `│ Key │ Action │` 画框表格时才按单元格翻译（单元格总宽不变，边框因此不会错位），普通 Markdown——也就是模型回复——绝不触碰；该屏的标题 “Keyboard Shortcuts” 通过包装全局 `theme.fg`/`bold`（按原文精确匹配 `chromeTitles`）汉化。
+6. 对**打印到聊天区**的界面输出（`/hotkeys`）：只在 Markdown 内容里出现 `│ Key │ Action │` 画框表格时才按单元格翻译（单元格总宽不变，边框因此不会错位），普通 Markdown——也就是模型回复——绝不触碰；该屏的标题 “Keyboard Shortcuts” 通过包装全局 `theme.fg`/`bold`（按原文精确匹配 `chromeTitles`）汉化；
+7. 包装全局 `theme.fg`/`bold`：按原文整串精确匹配 `chromeTitles`、`statusTexts`/`statusPatterns`（仅 `dim`/`muted` 角色，即聊天区状态行）或 `textPatterns`（与角色无关的锤定模板），命中才替换、保留首尾空白；`showError`/`showWarning` 的 `Error: …` / `Warning: …` 前缀保留、正文再查词典，未收录的正文保持英文。
 
 因此只读取 Pi 安装目录，不修改其中任何文件；Pi 升级后词典或补丁点可能需要适配（用下面的验证脚本检查）。
 
@@ -85,6 +86,8 @@ Pi 没有任何“界面翻译”扩展钩子，扩展加载器解析到的包�
 | `check-upgrades.ps1` | 第三方包基线漂移检查（只读） |
 | `verify.mjs` | 命令菜单验证脚本 |
 | `verify-ui.mjs` | 界面汉化验证脚本（离线真实渲染） |
+| `coverage.mjs` | 覆盖率盘点：扫 Pi 安装目录的界面字面量，按词典段统计已覆盖/未覆盖 |
+| `audit-ui.mjs` | 主题通路审计：解析 `theme.fg/bold`、`showStatus/showError/showWarning/showInfo` 的实参并套用包装判定，列出仍未覆盖的条目 |
 
 ## 词典维护
 
@@ -105,7 +108,8 @@ Pi 没有任何“界面翻译”扩展钩子，扩展加载器解析到的包�
 | `values` | 值列取值（`true`→`开`、`sse`→`SSE` 等） |
 | `chromeTitles` | 打印到聊天区的界面标题（如 `Keyboard Shortcuts`），按原文精确匹配，仅用于全局主题包装 |
 | `statusTexts` / `statusPatterns` | 聊天区状态行（如 `/reload` 后的 `Reloaded keybindings…`、`Model: …`）：它们经 `theme.fg("dim", message)` 渲染，只在该角色下按整串（`statusPatterns` 必须锚定）匹配替换，不影响其它着色文本与模型回复 |
-| `textPatterns` | 与颜色角色无关的少数界面指示条（全屏模式的 `↓ Jump to latest message · 快捷键`）：锚定正则，整串命中才替换，两侧空白原样保留 |
+| `chromeTitles` | 任何经 `theme.fg(role, …)` / `theme.bold(…)` 渲染、长度 ≤ 80 的界面串（面板标题、空态、字段名、通知与提示，如 `Session Info`、`No matching models`、`Compaction cancelled`）：按去空格后的整串精确匹配，与颜色角色无关 |
+| `textPatterns` | 与颜色角色无关的模板类界面串（全屏指示条 `↓ Jump to latest message`、`Loading …`、`Failed to load theme "…": …` 等）：锚定正则，整串命中才替换，两侧空白原样保留 |
 | `extensionTexts` | 第三方扩展注册的文案（`/hotkeys` 的“扩展”小节，如 `Toggle web search activity`）。这些字串不在 Pi 源码里，因此单独成段、**不做漂移检查**；换机器或换扩展时按需增删 |
 | `paragraphs` | **多行段落**（会被终端按宽度折行的说明文字，如 `/bug` 的隐私声明）。引擎把连续非空行按空格拼回整段再查表，命中后按原缩进与宽度重新折行——因此换终端宽度也能命中 |
 | `paragraphPatterns` | 含动态内容的多行段落：`[正则, 替换文本]`，在拼回整段后再匹配，`$1` 等可用（如“上传到 <主机>；导出则…”） |
@@ -128,11 +132,26 @@ node "$HOME\.pi\agent\extensions\pi-zh\verify-ui.mjs" --strict
 node "$HOME\.pi\agent\extensions\pi-zh\coverage.mjs" --show 12
 ```
 
-`verify-ui.mjs` 覆盖：设置界面标签/值列对齐/英文说明保留/中文说明追加/提示行、`/theme`、`/thinking`、`/images`、认证屏幕的关键文案、`/hotkeys` 画框表格（表头/动作/小节/第三方扩展说明/边框对齐）与普通 Markdown 不受影响、聊天区标题、状态行（`/reload` 提示与覆盖框、`Model: …` 等，仅 `dim`/`muted` 角色且整串命中）、全屏指示条（`↓ Jump to latest message`，保留快捷键与两侧 padding）、词典未收录的状态文本与非目标角色的同样文本不被改写、输出不超宽、重复安装幂等、编辑器容器兜底生效且容器外不翻译、词典无空键、`descriptions` 与 `texts` 不重叠、patterns/paragraphPatterns/statusPatterns/textPatterns 可编译（后两者还必须锚定）、词典漂移检查。当前结果：63 通过 / 0 警告 / 0 失败。
+`verify-ui.mjs` 覆盖：设置界面标签/值列对齐/英文说明保留/中文说明追加/提示行、`/theme`、`/thinking`、`/images`、认证屏幕的关键文案、`/hotkeys` 画框表格（表头/动作/小节/第三方扩展说明/边框对齐）与普通 Markdown 不受影响、聊天区标题、状态行（`/reload` 提示与覆盖框、`Model: …`、`Session compacted … times`、`Only one model in scope` 等，仅 `dim`/`muted` 角色且整串/锚定模板命中）、全屏指示条（`↓ Jump to latest message`，保留快捷键与两侧 padding）、面板/空态/通知类文案（`Session Info`、`No matching models`、`Compaction cancelled`、主题加载失败提示等）、错误/警告提示（`Error: …` / `Warning: …` 前缀保留、正文查词典，未收录正文不被改写）、缓存未命中与思考块丢弃通知、启动帮助提示行、词典未收录的状态文本与非目标角色的同样文本不被改写、输出不超宽、重复安装幂等、编辑器容器兜底生效且容器外不翻译、词典无空键、`descriptions` 与 `texts` 不重叠、patterns/paragraphPatterns/statusPatterns/textPatterns 可编译（后两者还必须锚定）、词典漂移检查。当前结果：77 通过 / 0 警告 / 0 失败。
+
+### 同类型文案的排查方法
+
+界面文案遍布 `dist/modes/interactive/**` 与 `dist/core/**`。判断“某种通路里的英文是否都翻到了”，先按渲染通路枚举字面量，再对词典四段（`chromeTitles` / `statusTexts` / `statusPatterns` / `textPatterns`）做覆盖比对：
+
+| 通路 | 排查方式 |
+| --- | --- |
+| `theme.fg(role, "…")` / `theme.bold("…")` | 仓库内 `node audit-ui.mjs`：解析调用实参（而非正则贪婪匹配），逐个字面量套用主题包装的判定逻辑，列出仍未覆盖的条目 |
+| `showStatus("…")` | 状态行经 `theme.fg("dim"/"muted", …)` 渲染，比对 `statusTexts` / `statusPatterns`（`audit-ui.mjs` 已含） |
+| `showError/showWarning("…")` | 实际文本是 `Error: …` / `Warning: …`，前缀由包装补齐，正文比对 `texts` / `chromeTitles` / 各 patterns（`audit-ui.mjs` 已含） |
+| 列表行/对话框/面板 | `node coverage.mjs`：扫 `dist/modes/interactive/**` 的字符串字面量并比对全部词典段 |
+
+注意：源码里常常写成 `\u00b7`、`\u2022`、`\u2713` 这类转义与 `\n` 换行，比对时要把两边都还原成运行时字符串，否则会把已译条目误判成缺口。
+
+当前盘点结果（Pi 1.3.0）：主题通路字面量 140 条，已覆盖 98 条、片段 29 条（被拼进整行，由整行模板/列表行处理）、完整文案 13 条（其中 11 条标记为“已在别处”，即由 `labels`/`texts`/列表行翻译；剩下 2 条为聊天记录/工具输出的内容，属设计不翻）；`coverage.mjs` 的广义候选覆盖率为 236/302 = 78.1%，未覆盖项同样集中在聊天记录、工具输出与专有名词。
 
 运行中的诊断日志写在扩展目录下的 `ui-zh.log`（记录补丁命中的类、屏幕首次渲染的原文行、未译行清单、`/hotkeys` 表格里仍未译的行；`PI_UI_ZH_LOG=0` 可关闭）。补词典时先看其中的 `[未译]` 行最省事。
 
-`coverage.mjs` 给出量化进度（当前：interactive 模式界面字面量 302 条，覆盖 205 条 = 67.9%）。剩下的未覆盖项分三类：
+`coverage.mjs` 给出量化进度（当前：interactive 模式界面字面量 302 条，覆盖 225 条 = 74.5%；剩余项多为聊天记录/工具输出/专有名词）。剩下的未覆盖项分三类：
 
 | 类别 | 举例 | 为何未覆盖 |
 | --- | --- | --- |

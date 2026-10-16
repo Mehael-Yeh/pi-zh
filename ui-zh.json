@@ -1,5 +1,5 @@
 {
-  "_comment": "Pi 界面汉化词典（风格 A：列表行标签中文 + 说明「英文原文 + 中文：…」两行）。键 = 界面上的英文原文（比对时去掉首尾空白），值 = 中文。labels=列表行标签列；descriptions=列表项说明（只用于追加「中文：…」行与 SelectList 行内说明，不会就地替换英文原文）；texts=整行文案（标题/提示/子菜单说明）；values=设置项取值列。校对：node verify-ui.mjs",
+  "_comment": "Pi 界面汉化词典（风格 A：列表行标签中文 + 说明「英文原文 + 中文：…」两行）。键 = 界面上的英文原文（比对时去掉首尾空白），值 = 中文。labels=列表行标签列；descriptions=列表项说明（只用于追加「中文：…」行与 SelectList 行内说明，不会就地替换英文原文）；texts=整行文案（标题/提示/子菜单说明）；values=设置项取值列。校对：node verify-ui.mjs 批次17：通知/会话摘要/缓存未命中类文案与模板。 批次18：启动帮助提示行。",
   "inline": "en+zh",
   "labels": {
     "Anthropic extra usage": "Anthropic 额外用量",
@@ -120,7 +120,9 @@
     "(current)": "（当前）",
     "user:": "用户：",
     "assistant:": "助手：",
-    "Session share destination": "会话分享目标"
+    "Session share destination": "会话分享目标",
+    "No summary": "不做摘要",
+    "Summarize with custom prompt": "用自定义提示词摘要"
   },
   "descriptions": {
     "Warn when Anthropic subscription auth may use paid extra usage": "当 Anthropic 订阅认证可能使用付费额外用量时发出警告",
@@ -358,7 +360,15 @@
     "What went wrong? (optional)": "哪里出了错？（可留空）",
     "Cancel": "取消",
     "tab scope · re:<pattern> regex · \"phrase\" exact": "Tab 切换范围 · re:正则 正则匹配 · \"短语\" 精确匹配",
-    "Radius authentication is not configured. Run '/login radius' first.": "未配置 Radius 认证，请先运行 “/login radius”。"
+    "Radius authentication is not configured. Run '/login radius' first.": "未配置 Radius 认证，请先运行 “/login radius”。",
+    "Session cwd not found": "找不到会话工作目录",
+    "Clipboard file path contains control characters": "剪贴板文件路径包含控制字符",
+    "Completed compaction is missing from the session context": "会话上下文中缺少已完成的压缩记录",
+    "Import session": "导入会话",
+    "Failed to resume session": "恢复会话失败",
+    "Failed to create session": "创建会话失败",
+    "Summarize branch?": "要摘要这个分支吗？",
+    "Custom summarization instructions": "自定义摘要指示"
   },
   "patterns": [
     [
@@ -998,7 +1008,75 @@
     "untrusted": "未信任"
   },
   "chromeTitles": {
-    "Keyboard Shortcuts": "键盘快捷键"
+    "Keyboard Shortcuts": "键盘快捷键",
+    "Session Tree": "会话树",
+    "Session Info": "会话信息",
+    "Messages": "消息",
+    "Tokens": "Token",
+    "Cost": "费用",
+    "Cache Warming": "缓存预热",
+    "What's New": "新变化",
+    "Update Available": "有可用更新",
+    "Package Updates Available": "有可用的扩展包更新",
+    "Changelog:": "更新日志：",
+    "Packages:": "扩展包：",
+    "See:": "参见：",
+    "Model Configuration": "模型配置",
+    "Rename Session": "重命名会话",
+    "Name:": "名称：",
+    "File:": "文件：",
+    "Total:": "总计：",
+    "User:": "用户：",
+    "Assistant:": "助手：",
+    "Tools:": "工具：",
+    "Input:": "输入：",
+    "Cached:": "已缓存：",
+    "Uncached:": "未缓存：",
+    "Output:": "输出：",
+    "Mode:": "模式：",
+    "Status:": "状态：",
+    "Cache miss penalty:": "缓存未命中代价：",
+    "Refresh cost:": "刷新成本：",
+    "Cache Re-billed:": "缓存重复计费：",
+    "No matching models": "没有匹配的模型",
+    "No entries found": "没有条目",
+    "No user messages found": "未找到用户消息",
+    "No resources found": "没有找到资源",
+    "Model unavailable": "模型不可用",
+    "· default": "· 默认",
+    "• not configured": "• 未配置",
+    "✓ configured": "✓ 已配置",
+    "empty": "空",
+    "✓ New session started": "✓ 已开始新会话",
+    "✓ Debug log written": "✓ 已写入调试日志",
+    "(cancelled)": "（已取消）",
+    "project load": "项目加载",
+    "project unload": "项目卸载",
+    "inherited global": "继承自全局",
+    "... (widget truncated)": "…（挂件已截断）",
+    "[Skill conflicts]": "[技能冲突]",
+    "[Prompt conflicts]": "[提示词冲突]",
+    "[Extension issues]": "[扩展问题]",
+    "[Theme conflicts]": "[主题冲突]",
+    "Approve access in your browser. If it did not open, visit:": "在浏览器中批准访问；若未自动打开，请访问：",
+    "If the browser runs on another machine, paste the URL it was redirected to:": "若浏览器运行在另一台机器上，请粘贴它重定向到的 URL：",
+    "You can also use an AWS profile, IAM keys, or role-based credentials.": "也可以使用 AWS profile、IAM 密钥或角色凭证。",
+    "Pick a theme.": "选一个主题。",
+    "Opt-in to anonymous usage data sharing?": "是否加入匿名使用数据共享？",
+    "Read the blog post:": "阅读博客文章：",
+    "pi has joined Earendil": "pi 已加入 Earendil",
+    "Response was truncated before completion.": "响应在完成前被截断。",
+    "Compaction cancelled": "已取消压缩",
+    "No agent messages to copy yet.": "还没有可复制的助手消息。",
+    "Selected entry has no text to copy": "所选条目没有可复制的文本",
+    "Usage: /import <path.jsonl>": "用法：/import <path.jsonl>",
+    "Usage: /name <name>": "用法：/name <名称>",
+    "A bash command is already running. Press Esc to cancel it first.": "已有 bash 命令在运行，请先按 Esc 取消它。",
+    "Model refresh timed out; searching cached models.": "模型刷新超时，改为搜索缓存里的模型。",
+    "Wait for compaction to finish before reloading.": "请等压缩完成后再重新加载。",
+    "Wait for the current response to finish before reloading.": "请等当前回复完成后再重新加载。",
+    "Model name or owner/repository[:quant]": "模型名或 owner/repository[:量化]",
+    "Waiting for authentication...": "正在等待认证…"
   },
   "extensionTexts": {
     "_comment": "第三方扩展用 pi.registerShortcut(key, { description }) 注册的文案，出现在 /hotkeys 的“扩展”小节。这些字串不在 Pi 源码里（无漂移检查）；换机器/换扩展时按需调整或删除。",
@@ -1052,9 +1130,52 @@
     "Copied last agent message to clipboard": "已复制最后一条助手消息到剪贴板",
     "No login methods available.": "没有可用的登录方式。",
     "No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.": "没有可移除的凭据。/logout 只移除由 /login 保存的凭据；环境变量与 models.json 配置不受影响。",
-    "Reloading keybindings, extensions, skills, prompts, themes, and context files...": "正在重新加载快捷键、扩展、技能、提示词、主题与上下文文件…"
+    "Reloading keybindings, extensions, skills, prompts, themes, and context files...": "正在重新加载快捷键、扩展、技能、提示词、主题与上下文文件…",
+    "Bug report cancelled": "已取消问题报告",
+    "Share cancelled": "已取消分享",
+    "Only one model in scope": "范围内只有一个模型",
+    "Only one model available": "只有一个可用模型",
+    "No account providers available.": "没有可用的账号登录方式。",
+    "No API key providers available.": "没有可用的 API Key 登录方式。",
+    "No login providers available.": "没有可用的登录方式。"
   },
   "statusPatterns": [
+    [
+      "^Press (.*) to show full startup help\\.$",
+      "按 $1 显示完整启动帮助。"
+    ],
+    [
+      "^Press (.*) to show full startup help and loaded resources\\.$",
+      "按 $1 显示完整启动帮助与已加载资源。"
+    ],
+    [
+      "^Session compacted (\\d+) times$",
+      "会话已压缩 $1 次"
+    ],
+    [
+      "^Session compacted 1 time$",
+      "会话已压缩 1 次"
+    ],
+    [
+      "^Bug report exported to: (.*)\\nReport ID: (.*)$",
+      "问题报告已导出到：$1\n报告 ID：$2"
+    ],
+    [
+      "^Share URL: (.*)\\nGist: (.*)$",
+      "分享链接：$1\nGist：$2"
+    ],
+    [
+      "^Bug report uploaded\\. Report ID: (.*)$",
+      "问题报告已上传。报告 ID：$1"
+    ],
+    [
+      "^Share URL: (.*)$",
+      "分享链接：$1"
+    ],
+    [
+      "^Restored (\\d+) queued messages? to editor$",
+      "已把 $1 条排队消息恢复到输入框"
+    ],
     [
       "^([^.]*)\\. Selected (.*)\\. Credentials saved to (.*)$",
       "$1。已选择 $2。凭据已保存到：$3"
@@ -1129,6 +1250,278 @@
     ]
   ],
   "textPatterns": [
+    [
+      "^Anthropic dropped (\\d+) thinking blocks? \\(details in session\\)$",
+      "Anthropic 丢弃了 $1 个思考块（详见会话）"
+    ],
+    [
+      "^Branch summary: (.*) tokens billed(.*)$",
+      "分支摘要：$1 tokens 已计费$2"
+    ],
+    [
+      "^Compaction: (.*) tokens billed(.*)$",
+      "压缩：$1 tokens 已计费$2"
+    ],
+    [
+      "^Cache miss: (.*) tokens re-billed(.*)$",
+      "缓存未命中：$1 tokens 重新计费$2"
+    ],
+    [
+      "^Cache miss after (\\d+)m idle: (.*) tokens re-billed(.*)$",
+      "空闲 $1 分钟后缓存未命中：$2 tokens 重新计费$3"
+    ],
+    [
+      "^Cache miss after model switch: (.*) tokens re-billed(.*)$",
+      "切换模型后缓存未命中：$1 tokens 重新计费$2"
+    ],
+    [
+      "^Wait for the current compaction or tree navigation to finish before navigating the session tree\\.$",
+      "请等当前压缩或会话树导航完成后再导航会话树。"
+    ],
+    [
+      "^Failed to load theme \"(.*)\": (.*)\\nFell back to the system theme\\.$",
+      "加载主题“$1”失败：$2\n已回退到系统主题。"
+    ],
+    [
+      "^Logged in to (.*?), but local model state could not be synchronized: (.*)$",
+      "已登录 $1，但本地模型状态无法同步：$2"
+    ],
+    [
+      "^Saved API key for (.*?), but local model state could not be synchronized: (.*)$",
+      "已保存 $1 的 API 密钥，但本地模型状态无法同步：$2"
+    ],
+    [
+      "^(.*?), but its model catalog could not be refreshed; using cached models\\.$",
+      "$1，但它的模型目录无法刷新；改用缓存里的模型。"
+    ],
+    [
+      "^(.*?), but its model catalog refresh timed out; using cached models\\.$",
+      "$1，但它的模型目录刷新超时；改用缓存里的模型。"
+    ],
+    [
+      "^(.*?), but its model catalog could not be refreshed: (.*)$",
+      "$1，但它的模型目录无法刷新：$2"
+    ],
+    [
+      "^(.*) crashed on (.*?) \\((.*)\\)\\. Run /bug to report it; the crash details are attached automatically\\.$",
+      "$1 在 $2（$3）崩溃。运行 /bug 报告；崩溃详情会自动附上。"
+    ],
+    [
+      "^(.*)\\. Features that load code on demand can fail until restart\\. (.*)$",
+      "$1。需要按需加载代码的功能在重启前可能失败。$2"
+    ],
+    [
+      "^Unknown thinking level \"(.*)\"\\. Available levels: (.*)\\.$",
+      "未知的思考级别“$1”。可用级别：$2。"
+    ],
+    [
+      "^Retry failed after (.*?): (.*)$",
+      "重试 $1 后仍然失败：$2"
+    ],
+    [
+      "^Could not save project trust after reload: (.*)$",
+      "重新加载后无法保存项目信任：$1"
+    ],
+    [
+      "^Could not read stored credentials: (.*)$",
+      "无法读取已保存的凭证：$1"
+    ],
+    [
+      "^Could not refresh (.*?); searching cached models\\.$",
+      "无法刷新 $1，改为搜索缓存里的模型。"
+    ],
+    [
+      "^Could not update (.*?): (.*)$",
+      "无法更新 $1：$2"
+    ],
+    [
+      "^Migrated credentials to auth\\.json: (.*)$",
+      "已把凭证迁移到 auth.json：$1"
+    ],
+    [
+      "^Session name was normalized from (.*) to (.*)$",
+      "会话名称已从 $1 规范化为 $2"
+    ],
+    [
+      "^Failed to build bug report: (.*)$",
+      "生成问题报告失败：$1"
+    ],
+    [
+      "^Failed to create gist: (.*)$",
+      "创建 Gist 失败：$1"
+    ],
+    [
+      "^Failed to export session: (.*)$",
+      "导出会话失败：$1"
+    ],
+    [
+      "^Failed to import session: (.*)$",
+      "导入会话失败：$1"
+    ],
+    [
+      "^Failed to login to (.*?): (.*)$",
+      "登录 $1 失败：$2"
+    ],
+    [
+      "^Failed to paste from clipboard: (.*)$",
+      "从剪贴板粘贴失败：$1"
+    ],
+    [
+      "^Failed to save API key for (.*?): (.*)$",
+      "保存 $1 的 API 密钥失败：$2"
+    ],
+    [
+      "^Failed to send queued messages?: (.*)$",
+      "发送排队消息失败：$1"
+    ],
+    [
+      "^Failed to upload Radius artifact: (.*)$",
+      "上传 Radius 制品失败：$1"
+    ],
+    [
+      "^Failed to write bug report summary: (.*)$",
+      "写入问题报告摘要失败：$1"
+    ],
+    [
+      "^Failed to write bug report: (.*)$",
+      "写入问题报告失败：$1"
+    ],
+    [
+      "^Bash command failed: (.*)$",
+      "bash 命令失败：$1"
+    ],
+    [
+      "^Reload failed: (.*)$",
+      "重新加载失败：$1"
+    ],
+    [
+      "^Shortcut handler error: (.*)$",
+      "快捷键处理器出错：$1"
+    ],
+    [
+      "^models\\.json error: (.*)$",
+      "models.json 错误：$1"
+    ],
+    [
+      "^(.*) is configured outside (.*)\\.$",
+      "$1 配置在 $2 之外。"
+    ],
+    [
+      "^Opting in stores a tracking identifier in settings\\.json and enables anonymous\\nusage analytics\\. This helps us to better debug, reproduce, and resolve issues\\nand bugs within Pi\\. You can observe what is shared using /privacy and make\\nchanges anytime in settings\\.json\\.$",
+      "选择加入会在 settings.json 中保存一个统计标识，并开启匿名使用分析，\n用于帮助我们更好地调试、复现和解决问题。可以用 /privacy 查看\n共享了什么，随时在 settings.json 里改回来。"
+    ],
+    [
+      "^This project is not trusted\\. Project (.*) resources and packages are ignored\\. Use /trust to save a trust decision, then restart pi\\.$",
+      "此项目未受信任：$1 的项目资源与扩展包会被忽略。用 /trust 保存信任决定后重启 pi。"
+    ],
+    [
+      "^Pi can explain its own features and look up its docs\\. Ask it how to use or extend Pi\\.$",
+      "Pi 能讲解自身功能并查阅文档，可以问它怎么用、怎么扩展。"
+    ],
+    [
+      "^Welcome to (.*), the minimal coding agent\\.$",
+      "欢迎使用 $1，极简编码智能体。"
+    ],
+    [
+      "^Session-only\\. (.*) to save to settings\\.$",
+      "仅本次会话。$1 保存到设置。"
+    ],
+    [
+      "^Loading (.*)$",
+      "加载 $1"
+    ],
+    [
+      "^New version (.*) is available\\. Run$",
+      "新版本 $1 已可用。运行"
+    ],
+    [
+      "^Package updates are available\\. Run$",
+      "有可用的扩展包更新。运行"
+    ],
+    [
+      "^If this looks like a (.*) bug, /bug sends a report to the developers\\.$",
+      "如果这看起来是 $1 的问题，/bug 会把报告发给开发者。"
+    ],
+    [
+      "^Session name set: (.*)$",
+      "会话名称已设置：$1"
+    ],
+    [
+      "^Session name: (.*)$",
+      "会话名称：$1"
+    ],
+    [
+      "^Model scope: (.*)$",
+      "模型范围：$1"
+    ],
+    [
+      "^Model Name: (.*)$",
+      "模型名称：$1"
+    ],
+    [
+      "^Steering: (.*)$",
+      "引导：$1"
+    ],
+    [
+      "^Follow-up: (.*)$",
+      "后续消息：$1"
+    ],
+    [
+      "^↳ (.*) to edit all queued messages$",
+      "↳ $1 编辑全部排队的消息"
+    ],
+    [
+      "^Press (.*) to show full startup help and loaded resources\\.$",
+      "按 $1 显示完整的启动帮助与已加载资源。"
+    ],
+    [
+      "^Press (.*) to show full startup help\\.$",
+      "按 $1 显示完整的启动帮助。"
+    ],
+    [
+      "^Output truncated\\. Full output: (.*)$",
+      "输出已截断。完整输出：$1"
+    ],
+    [
+      "^\\((\\d[\\d,]*) written to cache\\)$",
+      "（已写入缓存 $1）"
+    ],
+    [
+      "^\\((\\d+(?:\\.\\d+)?)%\\)$",
+      "（$1%）"
+    ],
+    [
+      "^\\(exit (.*)\\)$",
+      "（退出码 $1）"
+    ],
+    [
+      "^\\(timeout (.*)s\\)$",
+      "（超时 $1 秒）"
+    ],
+    [
+      "^\\((.*) to cycle\\)$",
+      "（$1 循环切换）"
+    ],
+    [
+      "^Anthropic dropped (.*)$",
+      "Anthropic 丢弃了 $1"
+    ],
+    [
+      "^Enter code: (.*)$",
+      "输入代码：$1"
+    ],
+    [
+      "^e\\.g\\., (.*)$",
+      "例如：$1"
+    ],
+    [
+      "^(.*) collision:$",
+      "$1 冲突："
+    ],
+    [
+      "^(.*) \\(skipped\\)$",
+      "$1（已跳过）"
+    ],
     [
       "^↓ Jump to latest message( · .*)?$",
       "↓ 跳到最新消息$1"

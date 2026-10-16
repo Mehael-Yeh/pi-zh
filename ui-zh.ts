@@ -98,7 +98,7 @@ const CHROME_FLAG = Symbol.for("pi.uiZh.chrome");
 const ADDCHILD_FLAG = Symbol.for("pi.uiZh.trueAddChild");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 9;
+const CODE_VERSION = 10;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
@@ -840,6 +840,12 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
   const statusTexts = dict.statusTexts ?? {};
   const statusPatterns = dict.statusPatterns ?? [];
   const textPatterns = dict.textPatterns ?? [];
+  // showError/showWarning 把消息拼成 `Error: …` / `Warning: …` 后走 theme.fg("error"/"warning", …)：
+  // 单独拆出前缀与正文，正文查词典后才翻译，未收录的正文保持英文。
+  const MESSAGE_PREFIXES: [string, string][] = [
+    ["Error: ", "错误："],
+    ["Warning: ", "警告："],
+  ];
   const applyPattern = (list: [string, string][], text: string): string | undefined => {
     for (const [source, replacement] of list) {
       let re: RegExp;
@@ -849,6 +855,22 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
         continue;
       }
       if (re.test(text)) return text.replace(re, replacement);
+    }
+    return undefined;
+  };
+  const translatePrefixed = (method: string, role: unknown, trimmed: string): string | undefined => {
+    if (method !== "fg" || (role !== "error" && role !== "warning")) return undefined;
+    for (const [en, zh] of MESSAGE_PREFIXES) {
+      if (!trimmed.startsWith(en)) continue;
+      const body = trimmed.slice(en.length);
+      const hit =
+        chromeTitles[body] ??
+        statusTexts[body] ??
+        dict.texts?.[body] ??
+        dict.extensionTexts?.[body] ??
+        applyPattern(textPatterns, body) ??
+        applyPattern(statusPatterns, body);
+      if (hit) return `${zh}${hit}`;
     }
     return undefined;
   };
@@ -866,6 +888,8 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
             (method === "fg" && (args[0] === "dim" || args[0] === "muted")
               ? statusTexts[trimmed] ?? applyPattern(statusPatterns, trimmed)
               : undefined) ??
+            // showError/showWarning 的 `Error: …` / `Warning: …`（正文查词典）
+            translatePrefixed(method, args[0], trimmed) ??
             // 其它被明确收录的界面指示条（锚定正则，与角色无关）。
             applyPattern(textPatterns, trimmed);
           // 保留原字符串首尾空白（如全屏指示条两侧的 padding），避免布局位移。

@@ -303,6 +303,40 @@ check(jumpIndicator.includes("跳到最新消息") && jumpIndicator.includes("^�
 check(jumpIndicator.startsWith(" ") && jumpIndicator.endsWith(" "), "全屏指示条两侧 padding 保留", JSON.stringify(jumpIndicator));
 const plainYes = strip(String(names.theme.fg("text", "Yes")));
 check(plainYes === "Yes", "text 角色下普通短词（Yes）不被改写", plainYes);
+
+// 提示/空态/面板文案（chromeTitles + textPatterns，同样走 theme 通路）
+const emptyState = strip(String(names.theme.fg("muted", "  No matching models")));
+check(emptyState.includes("没有匹配的模型") && emptyState.startsWith("  "), "空态（No matching models）已中文化且保留缩进", JSON.stringify(emptyState));
+const widgetTruncated = strip(String(names.theme.fg("muted", "... (widget truncated)")));
+check(widgetTruncated.includes("挂件已截断"), "挂件截断提示已中文化", widgetTruncated);
+const waitReload = strip(String(names.theme.fg("dim", "Wait for the current response to finish before reloading.")));
+check(waitReload.includes("重新加载"), "等待类警告（Wait for the current response…）已中文化", waitReload);
+const themeFail = strip(String(names.theme.fg("error", 'Failed to load theme "dark": bad color\nFell back to the system theme.')));
+check(themeFail.includes("加载主题") && themeFail.includes("系统主题"), "主题加载失败提示（含换行模板）已中文化", JSON.stringify(themeFail));
+const scopedOnly = strip(String(names.theme.fg("muted", "Session-only. ctrl+s to save to settings.")));
+check(scopedOnly.includes("仅本次会话"), "模板类提示（Session-only. …）已中文化", scopedOnly);
+
+// showError / showWarning：`Error: …` / `Warning: …` 前缀 + 正文分别处理
+const errToast = strip(String(names.theme.fg("error", "Error: Uploading bug reports requires online mode. Use Export as Zip instead.")));
+check(errToast.startsWith("错误：") && errToast.includes("上传问题报告"), "错误提示（Error: …）已中文化且保留前缀语义", errToast);
+const warnToast = strip(String(names.theme.fg("warning", "Warning: Wait for the current response to finish before reloading.")));
+check(warnToast.startsWith("警告：") && warnToast.includes("重新加载"), "警告提示（Warning: …）已中文化", warnToast);
+const unknownToast = strip(String(names.theme.fg("error", "Error: something nobody translated")));
+check(unknownToast === "Error: something nobody translated", "未收录的错误正文保持英文", unknownToast);
+const textRoleToast = strip(String(names.theme.fg("text", "Error: Uploading bug reports requires online mode. Use Export as Zip instead.")));
+check(textRoleToast.startsWith("Error: "), "非 error/warning 角色的同类文本不被改写", textRoleToast);
+
+// 状态行/通知模板（批次 17-18，走 statusPatterns / textPatterns）
+const cacheMiss = strip(String(names.theme.fg("warning", "Cache miss after model switch: 12.3k tokens re-billed (~$0.03)")));
+check(cacheMiss.includes("切换模型后缓存未命中") && cacheMiss.includes("重新计费"), "缓存未命中通知（含模型切换变体）已中文化", cacheMiss);
+const droppedThinking = strip(String(names.theme.fg("warning", "Anthropic dropped 3 thinking blocks (details in session)")));
+check(droppedThinking.includes("丢弃了 3 个思考块"), "思考块丢弃通知已中文化", droppedThinking);
+const compactedTimes = strip(String(names.theme.fg("dim", "Session compacted 2 times")));
+check(compactedTimes.includes("会话已压缩 2 次"), "状态行（Session compacted … times）已中文化", compactedTimes);
+const startupHelp = strip(String(names.theme.fg("dim", "Press ctrl+o to show full startup help and loaded resources.")));
+check(startupHelp.includes("完整启动帮助") && startupHelp.includes("ctrl+o"), "启动帮助提示行已中文化且保留按键", startupHelp);
+const onlyOneModel = strip(String(names.theme.fg("dim", "Only one model in scope")));
+check(onlyOneModel.includes("只有一个模型"), "状态行（Only one model in scope）已中文化", onlyOneModel);
 const untouchedStatus = "A sentence that is not in the dictionary at all";
 check(
   strip(String(names.theme.fg("dim", untouchedStatus))) === untouchedStatus,
@@ -376,6 +410,13 @@ const SAMPLE_LINES = [
   "  (auto)",
   "  thinking off",
   "  (all/scoped)",
+  // 通知/对话框/会话流程（批次 17-18）
+  "Session cwd not found",
+  "Import session",
+  "Failed to resume session",
+  "Summarize branch?",
+  "Custom summarization instructions",
+  "Clipboard file path contains control characters",
 ];
 const sampleProbe = (() => {
   try {
