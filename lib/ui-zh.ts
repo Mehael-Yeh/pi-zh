@@ -98,7 +98,7 @@ const CHROME_FLAG = Symbol.for("pi.uiZh.chrome");
 const ADDCHILD_FLAG = Symbol.for("pi.uiZh.trueAddChild");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 12;
+const CODE_VERSION = 13;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
