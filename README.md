@@ -132,10 +132,11 @@ node verify.mjs "$HOME\.pi\agent\install\releases\1.3.0\node_modules"   # 命令
 | `coverage.mjs` | 扫 `dist/modes/interactive/**` 的字符串字面量，对照全部词典段输出覆盖率与未覆盖清单（支持 `--show N`、`--file`、`--root`、`--dict`）。当前 Pi 1.3.0：302 条候选、覆盖 236 条（78.1%），余项集中在聊天记录/工具输出/专有名词。 |
 | `audit-ui.mjs` | 解析 `theme.fg`/`bold`、`showStatus/showError/showWarning/showInfo`、`keyHint`/`rawKeyHint`/`hint` 的实参（不是正则粗匹配），套用主题包装的判定后列出仍未覆盖项，并把「片段」与「完整文案」分开计数。当前 187 条字面量、覆盖 120 条；真正缺口只剩 2 条聊天记录/工具输出内容。 |
 | `verify.mjs` / `check-upgrades.ps1` | 命令菜单部分：词典渲染验证、第三方包基线漂移检查（只读）。 |
+| `privacy-check.mjs` | 隐私自检：检测本机绝对路径/用户名/邮箱/私网 IP、URL 内嵌凭证、常见 token 前缀与私钥块、`password` 字面量、可疑大文件；`--history` 会连同全部提交历史一起扫。未命中时退出码 0。可在提交前手动跑，也可接进 hook。 |
 
 ## 排障
 
-诊断日志在扩展目录下的 `ui-zh.log`（追加写入，约 800 行上限，`PI_UI_ZH_LOG=0` 关闭），关键前缀：
+诊断日志在扩展目录下的 `ui-zh.log`（追加写入，约 800 行上限，`PI_UI_ZH_LOG=0` 关闭）。日志**只记录界面渲染行与补丁诊断，不写对话内容**，并对家目录与用户名做脱敏（替为 `~` / `<user>`）。关键前缀：
 
 | 日志 | 含义 |
 | --- | --- |
@@ -166,6 +167,14 @@ node verify.mjs "$HOME\.pi\agent\install\releases\1.3.0\node_modules"   # 命令
 | `upgrade-baseline.json` / `baseline-archive/` / `check-upgrades.ps1` | 第三方包审计基线与其漂移检查 |
 | `verify.mjs` / `verify-ui.mjs` | 命令菜单与界面汉化的验证脚本 |
 | `coverage.mjs` / `audit-ui.mjs` | 覆盖率盘点与主题通路审计 |
+| `privacy-check.mjs` | 提交前隐私自检：扫被跟踪文件（`--history` 叠扫全部提交历史）中的本机路径、用户名、邮箱、私网 IP、凭证、私钥与大体积日志/转储 |
+
+## 隐私
+
+- **不联网、不上报**：代码里没有任何网络调用、子进程调用或遥测；仅读取 Pi 安装目录与自身词典。
+- **不读对话**：只挂界面组件，聊天记录、消息内容与工具输出不在翻译范围内，也不会被写入日志。
+- **日志本地化且脱敏**：`ui-zh.log` 位于扩展目录（`.gitignore` 已排除 `*.log`）、行数有上限、家目录与用户名已脱敏，可用 `PI_UI_ZH_LOG=0` 关闭。
+- **自检**：`node privacy-check.mjs --history` 会扫描工作区与全部提交历史中的本机路径、用户名、邮箱、私网 IP、凭证与私钥，未命中时退出码为 0。
 
 ## 边界
 

@@ -98,16 +98,33 @@ const CHROME_FLAG = Symbol.for("pi.uiZh.chrome");
 const ADDCHILD_FLAG = Symbol.for("pi.uiZh.trueAddChild");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 11;
+const CODE_VERSION = 12;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
 /**
- * 诊断日志：默认写入扩展目录 ui-zh.log（每次进程启动重写，最多 600 行）。
+ * 诊断日志：默认写入扩展目录 ui-zh.log（追加，最多 800 行，超 1MB 重置）。
  * 界面汉化失效往往是“补丁打到了另一份类副本”这类静默问题，日志是唯一可靠证据。
  * 设 PI_UI_ZH_LOG=0 可关闭。
+ * 日志只由界面渲染行与补丁诊断组成，不会写入对话内容；即便如此，仍对家目录与用户名做脱敏。
  */
 let debugLog: ((message: string) => void) | null = null;
+function redactForLog(text: string): string {
+  try {
+    const home = os.homedir();
+    let out = text;
+    if (home) {
+      out = out.split(home).join("~").split(home.replace(/\\/g, "/")).join("~");
+      const name = path.basename(home);
+      if (name && name.length >= 3) out = out.split(name).join("<user>");
+    }
+    const envName = process.env.USERNAME ?? process.env.USER ?? "";
+    if (envName && envName.length >= 3 && envName !== "root") out = out.split(envName).join("<user>");
+    return out;
+  } catch {
+    return text;
+  }
+}
 function getDebugLog(): (message: string) => void {
   if (debugLog) return debugLog;
   debugLog = () => { };
@@ -128,7 +145,7 @@ function getDebugLog(): (message: string) => void {
     debugLog = (message: string) => {
       if (lines++ >= 800) return;
       try {
-        appendFileSync(file, `${message}\n`);
+        appendFileSync(file, `${redactForLog(message)}\n`);
       } catch {
         /* 忽略 */
       }
