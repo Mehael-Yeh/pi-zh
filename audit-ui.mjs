@@ -146,6 +146,14 @@ for (const file of files) {
     if (isPlaceholder(text ?? "")) continue;
     record("theme", role, m[1], text, rel);
   }
+  // 按键提示：keyHint/rawKeyHint/hint(key, description) 的说明部分会变成 theme.fg("muted", ` ${description}`)
+  for (const m of src.matchAll(/(?<![.\w])(?:keyHint|rawKeyHint|hint)\s*\(/g)) {
+    const args = splitArgs(src, m.index + m[0].length - 1);
+    if (args.length < 2) continue;
+    const text = unquote(args[args.length - 1]);
+    if (isPlaceholder(text ?? "")) continue;
+    record("hint", "muted", "fg", text, rel);
+  }
   for (const m of src.matchAll(/\.(showStatus|showError|showWarning|showInfo)\s*\(/g)) {
     const text = unquote(splitArgs(src, m.index + m[0].length - 1)[0]);
     if (isPlaceholder(text ?? "")) continue;

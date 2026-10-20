@@ -98,7 +98,7 @@ const CHROME_FLAG = Symbol.for("pi.uiZh.chrome");
 const ADDCHILD_FLAG = Symbol.for("pi.uiZh.trueAddChild");
 // 补丁点（新增/变更要打补丁的类或方法）有改动时 +1：
 // /reload 会在同一进程重跑安装，版本号不同就重新安装新补丁（已有补丁不会重复套娃）。
-const CODE_VERSION = 10;
+const CODE_VERSION = 11;
 
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
@@ -836,10 +836,12 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
       });
     }),
   );
-  const chromeTitles = dict.chromeTitles ?? {};
-  const statusTexts = dict.statusTexts ?? {};
-  const statusPatterns = dict.statusPatterns ?? [];
-  const textPatterns = dict.textPatterns ?? [];
+  // 词典可能在 /reload 后整体替换：这里不能在安装时把四段快照成常量，
+  // 否则只改词典（不改补丁点）时，主题包裹果仍读旧的 chromeTitles/statusPatterns。
+  const chromeTitlesNow = () => dict.chromeTitles ?? {};
+  const statusTextsNow = () => dict.statusTexts ?? {};
+  const statusPatternsNow = () => dict.statusPatterns ?? [];
+  const textPatternsNow = () => dict.textPatterns ?? [];
   // showError/showWarning 把消息拼成 `Error: …` / `Warning: …` 后走 theme.fg("error"/"warning", …)：
   // 单独拆出前缀与正文，正文查词典后才翻译，未收录的正文保持英文。
   const MESSAGE_PREFIXES: [string, string][] = [
@@ -864,17 +866,22 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
       if (!trimmed.startsWith(en)) continue;
       const body = trimmed.slice(en.length);
       const hit =
-        chromeTitles[body] ??
-        statusTexts[body] ??
+        chromeTitlesNow()[body] ??
+        statusTextsNow()[body] ??
         dict.texts?.[body] ??
         dict.extensionTexts?.[body] ??
-        applyPattern(textPatterns, body) ??
-        applyPattern(statusPatterns, body);
+        applyPattern(textPatternsNow(), body) ??
+        applyPattern(statusPatternsNow(), body);
       if (hit) return `${zh}${hit}`;
     }
     return undefined;
   };
-  if (Object.keys(chromeTitles).length > 0 || Object.keys(statusTexts).length > 0 || statusPatterns.length > 0 || textPatterns.length > 0) {
+  const hasTitleEntries = () =>
+    Object.keys(chromeTitlesNow()).length > 0 ||
+    Object.keys(statusTextsNow()).length > 0 ||
+    statusPatternsNow().length > 0 ||
+    textPatternsNow().length > 0;
+  if (hasTitleEntries()) {
     const translateTitle = (method: string, original: (...args: any[]) => any) =>
       function (this: any, ...args: any[]) {
         const last = args.length - 1;
@@ -883,15 +890,15 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
           const trimmed = text.trim();
           const zh =
             // 界面标题（theme.fg("accent", "…") / theme.bold("…")）
-            (text.length <= 80 ? chromeTitles[trimmed] : undefined) ??
+            (text.length <= 80 ? chromeTitlesNow()[trimmed] : undefined) ??
             // 聊天区状态行：只认 theme.fg("dim"/"muted", message) 这种整串调用，避免动到其它着色文本。
             (method === "fg" && (args[0] === "dim" || args[0] === "muted")
-              ? statusTexts[trimmed] ?? applyPattern(statusPatterns, trimmed)
+              ? statusTextsNow()[trimmed] ?? applyPattern(statusPatternsNow(), trimmed)
               : undefined) ??
             // showError/showWarning 的 `Error: …` / `Warning: …`（正文查词典）
             translatePrefixed(method, args[0], trimmed) ??
             // 其它被明确收录的界面指示条（锚定正则，与角色无关）。
-            applyPattern(textPatterns, trimmed);
+            applyPattern(textPatternsNow(), trimmed);
           // 保留原字符串首尾空白（如全屏指示条两侧的 padding），避免布局位移。
           if (zh) {
             const leading = text.slice(0, text.length - text.trimStart().length);
@@ -927,12 +934,13 @@ export async function installUiZh(options: UiZhOptions = {}): Promise<UiZhResult
         // 自检：必须用「属性查找」走真实读路径（原型链），不能直接调 proto.fg——
         // 那样只是调我们自己的函数，代理/原型没挂对也会假成功。
         try {
-          const sample = Object.keys(chromeTitles)[0];
+          const titles = chromeTitlesNow();
+          const sample = Object.keys(titles)[0];
           const probe =
             method === "fg"
               ? String((themeObject as Record<string, any>).fg("accent", sample))
               : String((themeObject as Record<string, any>).bold(sample));
-          if (!probe.includes(chromeTitles[sample])) {
+          if (!probe.includes(titles[sample])) {
             log(`[patch] theme.${method} 包装未生效（跨 realm 代理拦截），跳过`);
             continue;
           }

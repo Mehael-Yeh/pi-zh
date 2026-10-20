@@ -1,5 +1,5 @@
 {
-  "_comment": "Pi 界面汉化词典（风格 A：列表行标签中文 + 说明「英文原文 + 中文：…」两行）。键 = 界面上的英文原文（比对时去掉首尾空白），值 = 中文。labels=列表行标签列；descriptions=列表项说明（只用于追加「中文：…」行与 SelectList 行内说明，不会就地替换英文原文）；texts=整行文案（标题/提示/子菜单说明）；values=设置项取值列。校对：node verify-ui.mjs 批次17：通知/会话摘要/缓存未命中类文案与模板。 批次18：启动帮助提示行。",
+  "_comment": "Pi 界面汉化词典（风格 A：列表行标签中文 + 说明「英文原文 + 中文：…」两行）。键 = 界面上的英文原文（比对时去掉首尾空白），值 = 中文。labels=列表行标签列；descriptions=列表项说明（只用于追加「中文：…」行与 SelectList 行内说明，不会就地替换英文原文）；texts=整行文案（标题/提示/子菜单说明）；values=设置项取值列。校对：node verify-ui.mjs 批次17：通知/会话摘要/缓存未命中类文案与模板。 批次18：启动帮助提示行。 批次19：启动头部按键提示与资源分节标题。",
   "inline": "en+zh",
   "labels": {
     "Anthropic extra usage": "Anthropic 额外用量",
@@ -1076,7 +1076,11 @@
     "Wait for compaction to finish before reloading.": "请等压缩完成后再重新加载。",
     "Wait for the current response to finish before reloading.": "请等当前回复完成后再重新加载。",
     "Model name or owner/repository[:quant]": "模型名或 owner/repository[:量化]",
-    "Waiting for authentication...": "正在等待认证…"
+    "Waiting for authentication...": "正在等待认证…",
+    "[Context]": "[上下文]",
+    "[Skills]": "[技能]",
+    "[Prompts]": "[提示词]",
+    "[Extensions]": "[扩展]"
   },
   "extensionTexts": {
     "_comment": "第三方扩展用 pi.registerShortcut(key, { description }) 注册的文案，出现在 /hotkeys 的“扩展”小节。这些字串不在 Pi 源码里（无漂移检查）；换机器/换扩展时按需调整或删除。",
@@ -1140,6 +1144,102 @@
     "No login providers available.": "没有可用的登录方式。"
   },
   "statusPatterns": [
+    [
+      "^more$",
+      "更多"
+    ],
+    [
+      "^bash$",
+      "bash"
+    ],
+    [
+      "^commands$",
+      "命令"
+    ],
+    [
+      "^clear/exit$",
+      "清空/退出"
+    ],
+    [
+      "^interrupt$",
+      "打断"
+    ],
+    [
+      "^to attach$",
+      "附加文件"
+    ],
+    [
+      "^to paste files on macOS, images, or text$",
+      "粘贴文件（macOS）／图片／文本"
+    ],
+    [
+      "^to edit all queued messages$",
+      "编辑所有排队消息"
+    ],
+    [
+      "^to queue follow-up$",
+      "排队追加消息"
+    ],
+    [
+      "^to run bash$",
+      "运行 bash"
+    ],
+    [
+      "^to run bash \\(no context\\)$",
+      "运行 bash（不进入上下文）"
+    ],
+    [
+      "^for commands$",
+      "查看命令"
+    ],
+    [
+      "^for external editor$",
+      "打开外部编辑器"
+    ],
+    [
+      "^to expand thinking$",
+      "展开思考块"
+    ],
+    [
+      "^to expand tools$",
+      "展开工具输出"
+    ],
+    [
+      "^to select model$",
+      "选择模型"
+    ],
+    [
+      "^to cycle models$",
+      "循环切换模型"
+    ],
+    [
+      "^to cycle thinking level$",
+      "循环切换思考级别"
+    ],
+    [
+      "^to delete to end$",
+      "删除到行尾"
+    ],
+    [
+      "^to suspend$",
+      "挂起"
+    ],
+    [
+      "^to exit$",
+      "退出"
+    ],
+    [
+      "^to exit \\(empty\\)$",
+      "退出（输入框为空时）"
+    ],
+    [
+      "^to clear$",
+      "清空"
+    ],
+    [
+      "^to interrupt$",
+      "打断"
+    ],
     [
       "^Press (.*) to show full startup help\\.$",
       "按 $1 显示完整启动帮助。"

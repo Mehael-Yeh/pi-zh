@@ -337,6 +337,18 @@ const startupHelp = strip(String(names.theme.fg("dim", "Press ctrl+o to show ful
 check(startupHelp.includes("完整启动帮助") && startupHelp.includes("ctrl+o"), "启动帮助提示行已中文化且保留按键", startupHelp);
 const onlyOneModel = strip(String(names.theme.fg("dim", "Only one model in scope")));
 check(onlyOneModel.includes("只有一个模型"), "状态行（Only one model in scope）已中文化", onlyOneModel);
+
+// 启动头部/展开视图：keyHint 说明（主题 muted 角色，带前导空格）与资源分节标题
+const expandToolsHint = String(names.theme.fg("muted", " to expand tools"));
+check(strip(expandToolsHint).includes("展开工具输出") && strip(expandToolsHint).startsWith(" "), "启动头部提示（to expand tools）已中文化且前导空格保留", JSON.stringify(strip(expandToolsHint)));
+const cycleThinkingHint = strip(String(names.theme.fg("muted", " to cycle thinking level")));
+check(cycleThinkingHint.includes("循环切换思考级别"), "启动头部提示（to cycle thinking level）已中文化", cycleThinkingHint);
+const runBashHint = strip(String(names.theme.fg("muted", " to run bash (no context)")));
+check(runBashHint.includes("不进入上下文"), "启动头部提示（to run bash (no context)）已中文化", runBashHint);
+const skillsSection = strip(String(names.theme.fg("mdHeading", "[Skills]")));
+check(skillsSection === "[技能]", "资源分节标题（[Skills]）已中文化", skillsSection);
+const skillConflict = strip(String(names.theme.fg("warning", "[Skill conflicts]")));
+check(skillConflict === "[技能冲突]", "冲突横幅（[Skill conflicts]）已中文化", skillConflict);
 const untouchedStatus = "A sentence that is not in the dictionary at all";
 check(
   strip(String(names.theme.fg("dim", untouchedStatus))) === untouchedStatus,

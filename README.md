@@ -67,7 +67,7 @@ Pi 没有任何“界面翻译”扩展钩子，扩展加载器解析到的包�
 | `SelectList.renderItem` / `render` | `/theme`、`/thinking`、`/images`、设置二级菜单 |
 | 11 个界面组件类 | `/settings`、`/theme`、`/images`、`/thinking`、`/model`、`/sessions`、`/tree`、`/login`、OAuth、扩展选择器、用户消息选择器 |
 | 编辑器容器兜底（`Container.addChild` → 子组件 `render`） | 未导出的屏幕：`/trust`、`/config`、scoped models、首次运行引导、bug 报告、会话分享等；只对词典命中的整行生效 |
-| `Markdown.render`（仅含 `Key`/`Action` 画框表格时）+ 全局 `theme.fg`/`bold` 标题 | `/hotkeys` 的命令速查表与 “Keyboard Shortcuts” 标题 |
+| `Markdown.render`（仅含 `Key`/`Action` 画框表格时）+ 全局 `theme.fg`/`bold` | `/hotkeys` 的命令速查表与 “Keyboard Shortcuts” 标题；启动头部与 `ctrl+o` 展开视图的按键提示（`escape/ctrl+c/ctrl+o … to expand tools`）、资源分节标题（`[Context]`/`[Skills]`/`[Prompts]`/`[Extensions]`）与冲突横幅（`[Skill conflicts]` 等） |
 
 覆盖判定以**词典命中**为准，因此“已覆盖”不等于“全部中文”：Pi 的模板拼接文案（`keyText` 组合的按键提示、`${变量}` 插值句）需要写进 `patterns` 才能翻译。聊天记录、消息内容、工具输出、模型回复**不在**翻译范围内。
 
@@ -87,7 +87,7 @@ Pi 没有任何“界面翻译”扩展钩子，扩展加载器解析到的包�
 | `verify.mjs` | 命令菜单验证脚本 |
 | `verify-ui.mjs` | 界面汉化验证脚本（离线真实渲染） |
 | `coverage.mjs` | 覆盖率盘点：扫 Pi 安装目录的界面字面量，按词典段统计已覆盖/未覆盖 |
-| `audit-ui.mjs` | 主题通路审计：解析 `theme.fg/bold`、`showStatus/showError/showWarning/showInfo` 的实参并套用包装判定，列出仍未覆盖的条目 |
+| `audit-ui.mjs` | 主题通路审计：解析 `theme.fg/bold`、`showStatus/showError/showWarning/showInfo`、`keyHint/rawKeyHint/hint` 的实参并套用包装判定，列出仍未覆盖的条目 |
 
 ## 词典维护
 
@@ -132,7 +132,7 @@ node "$HOME\.pi\agent\extensions\pi-zh\verify-ui.mjs" --strict
 node "$HOME\.pi\agent\extensions\pi-zh\coverage.mjs" --show 12
 ```
 
-`verify-ui.mjs` 覆盖：设置界面标签/值列对齐/英文说明保留/中文说明追加/提示行、`/theme`、`/thinking`、`/images`、认证屏幕的关键文案、`/hotkeys` 画框表格（表头/动作/小节/第三方扩展说明/边框对齐）与普通 Markdown 不受影响、聊天区标题、状态行（`/reload` 提示与覆盖框、`Model: …`、`Session compacted … times`、`Only one model in scope` 等，仅 `dim`/`muted` 角色且整串/锚定模板命中）、全屏指示条（`↓ Jump to latest message`，保留快捷键与两侧 padding）、面板/空态/通知类文案（`Session Info`、`No matching models`、`Compaction cancelled`、主题加载失败提示等）、错误/警告提示（`Error: …` / `Warning: …` 前缀保留、正文查词典，未收录正文不被改写）、缓存未命中与思考块丢弃通知、启动帮助提示行、词典未收录的状态文本与非目标角色的同样文本不被改写、输出不超宽、重复安装幂等、编辑器容器兜底生效且容器外不翻译、词典无空键、`descriptions` 与 `texts` 不重叠、patterns/paragraphPatterns/statusPatterns/textPatterns 可编译（后两者还必须锚定）、词典漂移检查。当前结果：77 通过 / 0 警告 / 0 失败。
+`verify-ui.mjs` 覆盖：设置界面标签/值列对齐/英文说明保留/中文说明追加/提示行、`/theme`、`/thinking`、`/images`、认证屏幕的关键文案、`/hotkeys` 画框表格（表头/动作/小节/第三方扩展说明/边框对齐）与普通 Markdown 不受影响、聊天区标题、状态行（`/reload` 提示与覆盖框、`Model: …`、`Session compacted … times`、`Only one model in scope` 等，仅 `dim`/`muted` 角色且整串/锚定模板命中）、全屏指示条（`↓ Jump to latest message`，保留快捷键与两侧 padding）、面板/空态/通知类文案（`Session Info`、`No matching models`、`Compaction cancelled`、主题加载失败提示等）、错误/警告提示（`Error: …` / `Warning: …` 前缀保留、正文查词典，未收录正文不被改写）、缓存未命中与思考块丢弃通知、启动帮助提示行、启动头部/`ctrl+o` 展开视图的按键提示（`to expand tools` 等，保留前导空格与按键名）与资源分节标题、词典未收录的状态文本与非目标角色的同样文本不被改写、输出不超宽、重复安装幂等、编辑器容器兜底生效且容器外不翻译、词典无空键、`descriptions` 与 `texts` 不重叠、patterns/paragraphPatterns/statusPatterns/textPatterns 可编译（后两者还必须锚定）、词典漂移检查。当前结果：82 通过 / 0 警告 / 0 失败。
 
 ### 同类型文案的排查方法
 
@@ -141,13 +141,14 @@ node "$HOME\.pi\agent\extensions\pi-zh\coverage.mjs" --show 12
 | 通路 | 排查方式 |
 | --- | --- |
 | `theme.fg(role, "…")` / `theme.bold("…")` | 仓库内 `node audit-ui.mjs`：解析调用实参（而非正则贪婪匹配），逐个字面量套用主题包装的判定逻辑，列出仍未覆盖的条目 |
+| `keyHint` / `rawKeyHint` / `hint(key, "…")` | 说明部分会变成 `theme.fg("muted", ` ${'$'}{description}`)`，同样属主题通路（`audit-ui.mjs` 已含）；启动头部与展开视图的提示因此归于 `statusPatterns` |
 | `showStatus("…")` | 状态行经 `theme.fg("dim"/"muted", …)` 渲染，比对 `statusTexts` / `statusPatterns`（`audit-ui.mjs` 已含） |
 | `showError/showWarning("…")` | 实际文本是 `Error: …` / `Warning: …`，前缀由包装补齐，正文比对 `texts` / `chromeTitles` / 各 patterns（`audit-ui.mjs` 已含） |
 | 列表行/对话框/面板 | `node coverage.mjs`：扫 `dist/modes/interactive/**` 的字符串字面量并比对全部词典段 |
 
 注意：源码里常常写成 `\u00b7`、`\u2022`、`\u2713` 这类转义与 `\n` 换行，比对时要把两边都还原成运行时字符串，否则会把已译条目误判成缺口。
 
-当前盘点结果（Pi 1.3.0）：主题通路字面量 140 条，已覆盖 98 条、片段 29 条（被拼进整行，由整行模板/列表行处理）、完整文案 13 条（其中 11 条标记为“已在别处”，即由 `labels`/`texts`/列表行翻译；剩下 2 条为聊天记录/工具输出的内容，属设计不翻）；`coverage.mjs` 的广义候选覆盖率为 236/302 = 78.1%，未覆盖项同样集中在聊天记录、工具输出与专有名词。
+当前盘点结果（Pi 1.3.0，含 `keyHint`/`rawKeyHint` 说明）：主题通路字面量 187 条，已覆盖 120 条、片段 54 条（被拼进整行，由整行模板/列表行处理）、完整文案 13 条（其中 11 条标记为“已在别处”，即由 `labels`/`texts`/列表行翻译；剩下 2 条为聊天记录/工具输出的内容，属设计不翻）；`coverage.mjs` 的广义候选覆盖率为 236/302 = 78.1%，未覆盖项同样集中在聊天记录、工具输出与专有名词。
 
 运行中的诊断日志写在扩展目录下的 `ui-zh.log`（记录补丁命中的类、屏幕首次渲染的原文行、未译行清单、`/hotkeys` 表格里仍未译的行；`PI_UI_ZH_LOG=0` 可关闭）。补词典时先看其中的 `[未译]` 行最省事。
 
