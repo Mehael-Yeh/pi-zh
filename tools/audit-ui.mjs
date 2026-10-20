@@ -8,13 +8,16 @@
  *   2. showStatus("…")                        → statusTexts / statusPatterns（状态行以 theme.fg("dim", …) 渲染）
  *   3. showError/showWarning/showInfo("…")    → chromeTitles / textPatterns
  *
- * 用法：node audit-ui.mjs [--root <pi 安装目录>] [--dict <ui-zh.json>] [--all]
+ * 用法：node tools/audit-ui.mjs [--root <pi 安装目录>] [--dict <dict/ui.json>] [--all]
  *   默认只打印未被覆盖的条目（不含纯专有名词/工具名/聊天记录内容的噪声过滤已尽量做足）；
  *   --all 同时打印已覆盖数量与按文件分组的总览。
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { homedir } from "node:os";
+import { fileURLToPath } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 const argv = process.argv.slice(2);
 const argOf = (name, fallback) => {
@@ -36,7 +39,8 @@ const findPiRoot = () => {
 };
 
 const PI = findPiRoot();
-const DICT = argOf("--dict", join(homedir(), ".pi", "agent", "extensions", "pi-zh", "ui-zh.json"));
+// 默认为本仓库的词典（与脚本同级的 ../dict/ui.json），可用 --dict 覆盖。
+const DICT = argOf("--dict", join(HERE, "..", "dict", "ui.json"));
 const dict = JSON.parse(readFileSync(DICT, "utf8"));
 
 const compiles = (list) => (list ?? []).map(([s, r]) => { try { return [new RegExp(s), r]; } catch { return null; } }).filter(Boolean);

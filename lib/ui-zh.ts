@@ -103,7 +103,7 @@ const CODE_VERSION = 12;
 const errText = (error: unknown): string => (error instanceof Error ? `${error.name}: ${error.message}` : String(error));
 
 /**
- * 诊断日志：默认写入扩展目录 ui-zh.log（追加，最多 800 行，超 1MB 重置）。
+ * 诊断日志：默认写入扩展根目录 ui-zh.log（追加，最多 800 行，超 1MB 重置）。
  * 界面汉化失效往往是“补丁打到了另一份类副本”这类静默问题，日志是唯一可靠证据。
  * 设 PI_UI_ZH_LOG=0 可关闭。
  * 日志只由界面渲染行与补丁诊断组成，不会写入对话内容；即便如此，仍对家目录与用户名做脱敏。
@@ -130,7 +130,7 @@ function getDebugLog(): (message: string) => void {
   debugLog = () => { };
   if (process.env.PI_UI_ZH_LOG === "0") return debugLog;
   try {
-    const file = fileURLToPath(new URL("./ui-zh.log", import.meta.url));
+    const file = fileURLToPath(new URL("../ui-zh.log", import.meta.url));
     const stamp = `pi-zh 界面汉化日志 ${new Date().toISOString()}  node ${process.version}\n`;
     // 默认追加（/reload 会重建模块，覆盖会丢掉上一次的记录）；超过 1MB 才重置。
     let small = false;
@@ -1085,7 +1085,7 @@ function translateTableRow(
   return out;
 }
 
-export function loadDictionary(url: URL | string = new URL("./ui-zh.json", import.meta.url)): UiDictionary {
+export function loadDictionary(url: URL | string = new URL("../dict/ui.json", import.meta.url)): UiDictionary {
   const raw = JSON.parse(readFileSync(url, "utf8")) as UiDictionary;
   return raw;
 }

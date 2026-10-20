@@ -2,7 +2,11 @@ param([switch]$Capture)
 $ErrorActionPreference = 'Stop'
 # Baseline covers installed/configured package versions and shipped code,
 # prompts and skill descriptions. It does not execute any third-party code.
-$agent = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+# 本脚本位于 <agent>/extensions/pi-zh/tools/，因此上翻三级即为 Pi 的 agent 目录。
+$agent = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent
+if (!(Test-Path (Join-Path $agent 'settings.json'))) {
+    throw "Cannot locate the Pi agent directory from $PSScriptRoot (expected settings.json in $agent)"
+}
 $settings = Get-Content (Join-Path $agent 'settings.json') -Raw | ConvertFrom-Json
 $packages = @($settings.packages | ForEach-Object {
     if ($_ -isnot [string] -or $_ -notmatch '^npm:([^@]+|@[^/]+/[^@]+)(?:@.*)?$') {
@@ -23,7 +27,7 @@ $packages = @($settings.packages | ForEach-Object {
     }
     [ordered]@{ name = $name; version = $manifest.version; files = $files }
 })
-$baselinePath = Join-Path $PSScriptRoot 'upgrade-baseline.json'
+$baselinePath = Join-Path $PSScriptRoot '..\baseline\upgrade-baseline.json'
 if ($Capture) {
     if (Test-Path $baselinePath) { throw 'Baseline already exists. Review changes before explicitly replacing it.' }
     [ordered]@{ schema = 1; packages = $packages } | ConvertTo-Json -Depth 8 | Set-Content $baselinePath -Encoding utf8

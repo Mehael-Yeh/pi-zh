@@ -57,7 +57,7 @@ Pi 没有界面翻译钩子，扩展加载器解析到的包与 Pi 实际运行�
 6. **画框表格**：仅在 Markdown 渲染出 `│ Key │ Action │` 表头时按单元格翻译（单元格总宽不变 ⇒ 边框不错位）；普通 Markdown 即模型回复，绝不触碰。
 7. **多行段落**：把连续非空行拼回整段查 `paragraphs`/`paragraphPatterns`，命中后按原缩进与当前宽度重新折行（窄终端也能命中）。
 
-词典通过 `globalThis` 上的代理实时读取，所以**只改 `ui-zh.json` 时 `/reload` 就生效**；改动补丁代码（新增补丁点或逻辑变化）需要递增 `ui-zh.ts` 里的 `CODE_VERSION`，`/reload` 便会重装包裹；个别情况下（进程里跑着更旧的代码）需要完全重启 Pi。
+词典通过 `globalThis` 上的代理实时读取，所以**只改 `dict/ui.json` 时 `/reload` 就生效**；改动补丁代码（新增补丁点或逻辑变化）需要递增 `lib/ui-zh.ts` 里的 `CODE_VERSION`，`/reload` 便会重装包裹；个别情况下（进程里跑着更旧的代码）需要完全重启 Pi。
 
 ## 覆盖范围
 
@@ -84,7 +84,7 @@ Pi 没有界面翻译钩子，扩展加载器解析到的包与 Pi 实际运行�
 
 ## 词典
 
-`ui-zh.json` 的全部段落：
+`dict/ui.json` 的全部段落：
 
 | 段落 | 用途 |
 | --- | --- |
@@ -103,7 +103,7 @@ Pi 没有界面翻译钩子，扩展加载器解析到的包与 Pi 实际运行�
 
 命中顺序：多行段落（拼回整段后用 `paragraphs` / `paragraphPatterns`）→ 整行精确（`texts` → `labels` → `extensionTexts`）→ `patterns`（**首个命中即返回，所以更具体的模板要放前面**）→ 标签列 + 值列。
 
-写作规则（`verify-ui.mjs` 会强制检查）：
+写作规则（`tools/verify-ui.mjs` 会强制检查）：
 
 - 键一律不带首尾空格（引擎按 `trim()` 后查表）。
 - `labels` / `descriptions` 的键必须**逐字存在**于 Pi 源码，否则漂移检查失败；`texts` 的漂移只告警。
@@ -111,7 +111,7 @@ Pi 没有界面翻译钩子，扩展加载器解析到的包与 Pi 实际运行�
 - `patterns` / `statusPatterns` / `textPatterns` / `paragraphPatterns` 必须能编译；后两者还必须锚定（`^…$`）。
 - 源码里的 `\u00b7`、`\u2022`、`\u2713` 与 `\n` 转义要按运行时字符写入，否则比对不上。
 
-命令菜单词典另有两个文件：`translations.json`（键为不带 `/` 的完整命令名，优先于第三方词典；未收录的命令保留原说明，技能命令统一加「加载技能」）与 `third-party.ts`（第三方 npm 包命令，含别名、条件命令与提示模板）。
+命令菜单词典另有两个文件：`dict/commands.json`（键为不带 `/` 的完整命令名，优先于第三方词典；未收录的命令保留原说明，技能命令统一加「加载技能」）与 `dict/commands-third-party.ts`（第三方 npm 包命令，含别名、条件命令与提示模板）。
 
 ## 维护工具
 
@@ -120,10 +120,12 @@ Pi 没有界面翻译钩子，扩展加载器解析到的包与 Pi 实际运行�
 ```powershell
 cd "$HOME\.pi\agent\extensions\pi-zh"
 
-node verify-ui.mjs --strict   # 离线渲染真实组件并断言（--strict 把警告当失败）
-node coverage.mjs --show 12   # 界面字面量覆盖率盘点，列出未覆盖文案
-node audit-ui.mjs             # 主题通路审计（theme.fg/bold、showStatus/showError、keyHint…）
-node verify.mjs "$HOME\.pi\agent\install\releases\1.3.0\node_modules"   # 命令菜单验证
+node tools/verify-ui.mjs --strict   # 离线渲染真实组件并断言（--strict 把警告当失败）
+node tools/coverage.mjs --show 12   # 界面字面量覆盖率盘点，列出未覆盖文案
+node tools/audit-ui.mjs             # 主题通路审计（theme.fg/bold、showStatus/showError、keyHint…）
+node tools/verify.mjs "$HOME\.pi\agent\install\releases\1.3.0\node_modules"   # 命令菜单验证
+node tools/privacy-check.mjs --history                                       # 隐私自检（含历史）
+pwsh tools/check-upgrades.ps1                                                # 三方包基线漂移检查（只读）
 ```
 
 | 工具 | 说明 |
@@ -131,7 +133,7 @@ node verify.mjs "$HOME\.pi\agent\install\releases\1.3.0\node_modules"   # 命令
 | `verify-ui.mjs` | 离线构造真实组件并渲染：设置界面标签/值列对齐/英文说明保留/中文说明追加、`/theme`、`/thinking`、`/images`、认证屏、`/hotkeys` 表格与普通 Markdown 不受影响、状态行与通知模板、`Error:`/`Warning:` 前缀、启动头部按键提示、资源分节标题、超宽检查、重复安装幂等、编辑器容器兜底（容器外不翻译）、词典无空键、`descriptions` 与 `texts` 不重叠、模板可编译且锚定、词典漂移。**当前 82 项断言全部通过（0 警告）**。 |
 | `coverage.mjs` | 扫 `dist/modes/interactive/**` 的字符串字面量，对照全部词典段输出覆盖率与未覆盖清单（支持 `--show N`、`--file`、`--root`、`--dict`）。当前 Pi 1.3.0：302 条候选、覆盖 236 条（78.1%），余项集中在聊天记录/工具输出/专有名词。 |
 | `audit-ui.mjs` | 解析 `theme.fg`/`bold`、`showStatus/showError/showWarning/showInfo`、`keyHint`/`rawKeyHint`/`hint` 的实参（不是正则粗匹配），套用主题包装的判定后列出仍未覆盖项，并把「片段」与「完整文案」分开计数。当前 187 条字面量、覆盖 120 条；真正缺口只剩 2 条聊天记录/工具输出内容。 |
-| `verify.mjs` / `check-upgrades.ps1` | 命令菜单部分：词典渲染验证、第三方包基线漂移检查（只读）。 |
+| `verify.mjs` / `check-upgrades.ps1` | 命令菜单部分：词典渲染验证（基线里已卸载/升级的包会 `SKIP` 汇报而不是报错）、第三方包基线漂移检查（只读）。基线是审计快照：复核升级后更新 `baseline/upgrade-baseline.json`，旧快照进 `baseline/archive/`。 |
 | `privacy-check.mjs` | 隐私自检：检测本机绝对路径/用户名/邮箱/私网 IP、URL 内嵌凭证、常见 token 前缀与私钥块、`password` 字面量、可疑大文件；`--history` 会连同全部提交历史一起扫。未命中时退出码 0。可在提交前手动跑，也可接进 hook。 |
 
 ## 排障
@@ -158,23 +160,48 @@ node verify.mjs "$HOME\.pi\agent\install\releases\1.3.0\node_modules"   # 命令
 
 ## 目录结构
 
-| 文件 | 说明 |
+```
+pi-zh/
+├── index.ts                    扩展入口（必须在扩展目录根部）：装配两个功能
+├── lib/
+│   ├── command-menu.ts         命令菜单汉化：包 AutocompleteProvider
+│   └── ui-zh.ts                界面汉化引擎：定位运行时类、安装渲染装饰器、翻译引擎
+├── dict/
+│   ├── ui.json                 界面词典（段落见上）
+│   ├── commands.json           命令菜单词典（用户维护）
+│   └── commands-third-party.ts 三方包命令词典（含别名/条件命令/提示模板）
+├── tools/                      维护脚本（不随 Pi 加载）
+│   ├── verify-ui.mjs           界面汉化离线验证
+│   ├── verify.mjs              命令菜单验证
+│   ├── coverage.mjs            界面字面量覆盖率盘点
+│   ├── audit-ui.mjs            主题通路审计
+│   ├── privacy-check.mjs       隐私/凭证自检（可扫历史）
+│   └── check-upgrades.ps1      三方包基线漂移检查
+├── baseline/
+│   ├── upgrade-baseline.json   当前审计基线
+│   └── archive/                历史快照
+├── README.md / LICENSE / .gitignore / .gitattributes
+└── ui-zh.log                   运行时诊断日志（本地生成，已忽略）
+```
+
+| 路径 | 说明 |
 | --- | --- |
 | `index.ts` | 扩展入口：装配命令菜单汉化 + 界面汉化，各自独立容错 |
-| `ui-zh.ts` | 界面汉化引擎：定位运行时类、安装渲染装饰器、逐行/整段/表格翻译 |
-| `ui-zh.json` | 界面词典（段落见上） |
-| `translations.json` / `third-party.ts` | 命令菜单词典 |
-| `upgrade-baseline.json` / `baseline-archive/` / `check-upgrades.ps1` | 第三方包审计基线与其漂移检查 |
-| `verify.mjs` / `verify-ui.mjs` | 命令菜单与界面汉化的验证脚本 |
-| `coverage.mjs` / `audit-ui.mjs` | 覆盖率盘点与主题通路审计 |
-| `privacy-check.mjs` | 提交前隐私自检：扫被跟踪文件（`--history` 叠扫全部提交历史）中的本机路径、用户名、邮箱、私网 IP、凭证、私钥与大体积日志/转储 |
+| `lib/ui-zh.ts` | 界面汉化引擎 |
+| `lib/command-menu.ts` | 命令菜单汉化（`translateSuggestions` / `wrapProvider` / `installCommandMenu`） |
+| `dict/ui.json` | 界面词典（段落见上） |
+| `dict/commands.json` / `dict/commands-third-party.ts` | 命令菜单词典 |
+| `baseline/upgrade-baseline.json` / `baseline/archive/` / `tools/check-upgrades.ps1` | 第三方包审计基线与其漂移检查 |
+| `tools/verify.mjs` / `tools/verify-ui.mjs` | 命令菜单与界面汉化的验证脚本 |
+| `tools/coverage.mjs` / `tools/audit-ui.mjs` | 覆盖率盘点与主题通路审计 |
+| `tools/privacy-check.mjs` | 提交前隐私自检：扫被跟踪文件（`--history` 叠扫全部提交历史）中的本机路径、用户名、邮箱、私网 IP、凭证、私钥与大体积日志/转储 |
 
 ## 隐私
 
 - **不联网、不上报**：代码里没有任何网络调用、子进程调用或遥测；仅读取 Pi 安装目录与自身词典。
 - **不读对话**：只挂界面组件，聊天记录、消息内容与工具输出不在翻译范围内，也不会被写入日志。
 - **日志本地化且脱敏**：`ui-zh.log` 位于扩展目录（`.gitignore` 已排除 `*.log`）、行数有上限、家目录与用户名已脱敏，可用 `PI_UI_ZH_LOG=0` 关闭。
-- **自检**：`node privacy-check.mjs --history` 会扫描工作区与全部提交历史中的本机路径、用户名、邮箱、私网 IP、凭证与私钥，未命中时退出码为 0。
+- **自检**：`node tools/privacy-check.mjs --history` 会扫描工作区与全部提交历史中的本机路径、用户名、邮箱、私网 IP、凭证与私钥，未命中时退出码为 0。
 
 ## 边界
 
@@ -187,3 +214,7 @@ node verify.mjs "$HOME\.pi\agent\install\releases\1.3.0\node_modules"   # 命令
 
 - 只关界面汉化：启动 Pi 前设 `PI_UI_ZH=0`。
 - 全部停用：把本目录移出 `~/.pi/agent/extensions/`，然后 `/reload` 或重启 Pi。
+
+## 许可
+
+[MIT](./LICENSE) © 2026 Mehael-Yeh。欢迎提交词典翻译与新的覆盖点；维护流程见上面「维护工具」与「目录结构」。

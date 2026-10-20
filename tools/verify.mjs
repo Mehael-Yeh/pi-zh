@@ -8,17 +8,26 @@ const { createJiti } = await import(url('jiti/lib/jiti.mjs'));
 const jiti = createJiti(import.meta.url, { alias: {
   '@earendil-works/pi-coding-agent': `${modules}/@earendil-works/pi-coding-agent/dist/index.js`,
 }, moduleCache: false });
-const extension = await jiti.import(new URL('./index.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
+const commandMenu = await jiti.import(new URL('../lib/command-menu.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
+const entry = await jiti.import(new URL('../index.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
 const { CombinedAutocompleteProvider } = await import(url('@earendil-works/pi-tui/dist/autocomplete.js'));
 const { BUILTIN_SLASH_COMMANDS } = await import(url('@earendil-works/pi-coding-agent/dist/core/slash-commands.js'));
-const { thirdParty } = await jiti.import(new URL('./third-party.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
-const dictionary = { ...thirdParty, ...JSON.parse(readFileSync(new URL('./translations.json', import.meta.url))) };
-const baseline = JSON.parse(readFileSync(new URL('./upgrade-baseline.json', import.meta.url)));
-const packageRoot = new URL('../../npm/node_modules/', import.meta.url);
+const { thirdParty } = await jiti.import(new URL('../dict/commands-third-party.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
+const dictionary = { ...thirdParty, ...JSON.parse(readFileSync(new URL('../dict/commands.json', import.meta.url))) };
+const baseline = JSON.parse(readFileSync(new URL('../baseline/upgrade-baseline.json', import.meta.url)));
+const packageRoot = new URL('../../../npm/node_modules/', import.meta.url);
 let discovered = 0;
+const skipped = [];
 for (const pkg of baseline.packages) {
   for (const file of Object.keys(pkg.files)) {
-    const content = readFileSync(new URL(`${pkg.name}/${file}`, packageRoot), 'utf8');
+    // 基线是“审计快照”：包被卸载或升级后文件可能已不存在，跳过并汇报即可。
+    let content;
+    try {
+      content = readFileSync(new URL(`${pkg.name}/${file}`, packageRoot), 'utf8');
+    } catch {
+      skipped.push(`${pkg.name}/${file}`);
+      continue;
+    }
     if (file.endsWith('.md') && /(^|\/)prompts\//.test(file)) {
       const name = file.split('/').at(-1).slice(0, -3);
       assert.ok(dictionary[name], `untranslated prompt: ${pkg.name}/${name}`);
@@ -32,12 +41,17 @@ for (const pkg of baseline.packages) {
 }
 // Table-driven and variable-name registrations are reviewed separately.
 for (const name of Object.keys(thirdParty)) {
-  const result = extension.translateSuggestions({ prefix: '/', items: [{ value: name, label: name, description: 'Original' }] }, dictionary);
+  const result = commandMenu.translateSuggestions({ prefix: '/', items: [{ value: name, label: name, description: 'Original' }] }, dictionary);
   assert.equal(result.items[0].description, `${dictionary[name]} · Original`);
 }
 console.log(`PASS: ${Object.keys(thirdParty).length} third-party translations; ${discovered} source command/template occurrences covered.`);
+if (skipped.length) {
+  const packages = [...new Set(skipped.map((item) => item.split('/')[0]))];
+  console.log(`SKIP: ${skipped.length} 个基线文件在本地已不存在（涉及 ${packages.join(', ')}）——包被卸载或升级；` +
+    '用 tools/check-upgrades.ps1 复核后更新 baseline/upgrade-baseline.json。');
+}
 const original = new CombinedAutocompleteProvider([...BUILTIN_SLASH_COMMANDS, { name: 'unknown-test', description: 'Unknown command' }], process.cwd());
-const wrapped = extension.wrapProvider(original, dictionary);
+const wrapped = commandMenu.wrapProvider(original, dictionary);
 const options = { signal: new AbortController().signal };
 const before = await original.getSuggestions(['/'], 0, 1, options);
 const after = await wrapped.getSuggestions(['/'], 0, 1, options);
@@ -47,14 +61,14 @@ for (const command of BUILTIN_SLASH_COMMANDS) {
   assert.ok(after.items.find(x => x.value === command.name).description.startsWith(dictionary[command.name]));
 }
 assert.equal(after.items.find(x => x.value === 'unknown-test').description, 'Unknown command');
-assert.deepEqual(extension.translateSuggestions(after, dictionary), after);
+assert.deepEqual(commandMenu.translateSuggestions(after, dictionary), after);
 const item = after.items.find(x => x.value === 'model');
 assert.deepEqual(wrapped.applyCompletion(['/'], 0, 1, item, '/'), original.applyCompletion(['/'], 0, 1, item, '/'));
 const files = { prefix: './', items: [{ value: 'model', label: 'model', description: 'File' }] };
-assert.equal(extension.translateSuggestions(files, dictionary), files);
-assert.equal(extension.translateSuggestions(null, dictionary), null);
+assert.equal(commandMenu.translateSuggestions(files, dictionary), files);
+assert.equal(commandMenu.translateSuggestions(null, dictionary), null);
 let handler;
-extension.default({ on: (name, fn) => { assert.equal(name, 'session_start'); handler = fn; } });
+entry.default({ on: (name, fn) => { assert.equal(name, 'session_start'); handler = fn; } });
 let factory;
 const ctx = { mode: 'tui', ui: { setEditorComponent: fn => { factory = fn; }, notify: text => { throw new Error(text); } } };
 handler({}, ctx);

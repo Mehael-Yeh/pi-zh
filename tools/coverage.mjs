@@ -1,5 +1,5 @@
-// 覆盖率盘点：把 Pi 安装里的界面字面量逐个与 ui-zh.json 对照，列出还没覆盖的文案。
-// 用法：node coverage.mjs [--show 12] [--file model-selector] [--root <pi 包目录>]
+// 覆盖率盘点：把 Pi 安装里的界面字面量逐个与 dict/ui.json 对照，列出还没覆盖的文案。
+// 用法：node tools/coverage.mjs [--show 12] [--file model-selector] [--root <pi 包目录>] [--dict <词典路径>]
 // 说明：候选字串只从“会渲染界面”的文件里抽取（interactive 模式及其 components），并过滤代码噪声；
 // 少量源码里用 \\u00b7 转义写的文案会在比对前还原，避免误报。
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
@@ -13,7 +13,7 @@ const argValue = (name) => {
 };
 const SHOW = Number(argValue("--show") ?? 10);
 const FILE_FILTER = argValue("--file");
-const DICT_PATH = argValue("--dict") ?? new URL("./ui-zh.json", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+const DICT_PATH = argValue("--dict") ?? new URL("../dict/ui.json", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
 const findPiRoot = () => {
   const explicit = argValue("--root") ?? process.env.PI_UI_ZH_ROOT;

@@ -33,8 +33,8 @@ const ROW_RE = /^([\s>→·]*)(\S(?:.*?\S)?)(\s{2,})(\S.*)$/;
 const noop = () => { };
 
 /** 界面汉化模块（node 24 可直接导入 .ts） */
-const ui = await import(pathToFileURL(path.join(HERE, "ui-zh.ts")).href);
-const dict = ui.loadDictionary(new URL("./ui-zh.json", import.meta.url));
+const ui = await import(pathToFileURL(path.join(HERE, "..", "lib", "ui-zh.ts")).href);
+const dict = ui.loadDictionary(new URL("../dict/ui.json", import.meta.url));
 const piRoot = ui.resolvePiRoot();
 if (!piRoot) {
   console.error("✗ 找不到正在运行的 pi 安装目录（dist/bundle/chunks）");

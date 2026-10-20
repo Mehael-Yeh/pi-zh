@@ -9,17 +9,19 @@
  *   - 大体积可疑文件（日志、备份、转储）
  *
  * 用法：
- *   node privacy-check.mjs            # 只查工作区（被跟踪文件）
- *   node privacy-check.mjs --history  # 再查全部提交历史（发现后需要改历史才能清除，如 git filter-repo）
+ *   node tools/privacy-check.mjs            # 只查工作区（被跟踪文件）
+ *   node tools/privacy-check.mjs --history  # 再查全部提交历史（发现后需改历史才能清除，如 git filter-repo）
  *
  * 退出码：0 = 未发现；1 = 有发现（见输出）。
  */
 import { execFileSync } from "node:child_process";
 import { statSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { homedir } from "node:os";
+import { fileURLToPath } from "node:url";
 
-const ROOT = process.cwd();
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: HERE, encoding: "utf8" }).trim();
 const withHistory = process.argv.includes("--history");
 const git = (...args) => execFileSync("git", args, { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 
